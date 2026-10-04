@@ -279,6 +279,7 @@ def _generate_gemini_text(
     system_instruction: str,
     max_output_tokens: int = 800,
     response_mime_type: Optional[str] = None,
+    response_schema: Optional[dict] = None,
 ) -> tuple[str, int]:
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -301,6 +302,11 @@ def _generate_gemini_text(
                     **(
                         {"response_mime_type": response_mime_type}
                         if response_mime_type
+                        else {}
+                    ),
+                    **(
+                        {"response_schema": response_schema}
+                        if response_schema is not None
                         else {}
                     ),
                 },
@@ -857,6 +863,7 @@ def ai_recommendation(request: AIRecommendationRequest):
         system_instruction,
         max_output_tokens=500,
         response_mime_type="application/json",
+        response_schema=AIRecommendationDetails.model_json_schema(),
     )
     try:
         details = AIRecommendationDetails.model_validate(json.loads(answer))
