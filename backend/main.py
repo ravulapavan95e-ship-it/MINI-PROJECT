@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
+from google.genai._gaos.lib.compat_errors import APIStatusError as GeminiAPIStatusError
 from google.genai.errors import APIError
 from httpx import HTTPError
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -298,10 +299,10 @@ def _generate_gemini_text(
                     "max_output_tokens": max_output_tokens,
                 },
             )
-    except APIError as error:
-        status_code = getattr(error, "code", None)
+    except (APIError, GeminiAPIStatusError) as error:
+        status_code = getattr(error, "status_code", None) or getattr(error, "code", None)
         logger.warning("Gemini API request failed with status %s.", status_code)
-        if status_code == 429:
+        if status_code in (429, 500, 502, 503, 504):
             raise HTTPException(
                 status_code=503,
                 detail="The AI service is temporarily busy. Please try again shortly.",

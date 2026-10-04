@@ -161,6 +161,38 @@ function isAITextResponse(value: unknown): value is AITextResponse {
   );
 }
 
+async function readApiResponse(
+  response: Response,
+): Promise<Record<string, unknown> | null> {
+  const body = await response.text();
+  if (!body.trim()) {
+    return null;
+  }
+
+  try {
+    const value: unknown = JSON.parse(body);
+    return typeof value === "object" && value !== null && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function getAiRequestError(
+  data: Record<string, unknown> | null,
+  response: Response,
+  fallback: string,
+): string {
+  if (typeof data?.detail === "string") {
+    return data.detail;
+  }
+  if (response.status >= 500) {
+    return "The AI service is temporarily unavailable. Please try again shortly.";
+  }
+  return fallback;
+}
+
 function extractTutorSection(response: string, heading: string): string {
   const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const section = response.match(
@@ -684,17 +716,20 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
           ...getLearnerContext(),
         }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
 
       if (!response.ok) {
         throw new Error(
-          typeof data.detail === "string"
-            ? data.detail
-            : "The AI Learning Tutor could not answer. Please try again.",
+          getAiRequestError(
+            data,
+            response,
+            "The AI Learning Tutor could not answer. Please try again.",
+          ),
         );
       }
 
       if (
+        !data ||
         typeof data.response !== "string" ||
         typeof data.remaining_requests !== "number" ||
         typeof data.daily_limit !== "number"
@@ -738,13 +773,15 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
               : [],
         }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
 
       if (!response.ok) {
         throw new Error(
-          typeof data.detail === "string"
-            ? data.detail
-            : "Could not get an AI study recommendation. Please try again.",
+          getAiRequestError(
+            data,
+            response,
+            "Could not get an AI study recommendation. Please try again.",
+          ),
         );
       }
 
@@ -794,13 +831,15 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
           user_answer: answer,
         }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
 
       if (!response.ok) {
         throw new Error(
-          typeof data.detail === "string"
-            ? data.detail
-            : "Could not explain this answer. Please try again.",
+          getAiRequestError(
+            data,
+            response,
+            "Could not explain this answer. Please try again.",
+          ),
         );
       }
 
