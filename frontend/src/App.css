@@ -1524,3 +1524,209 @@ footer span {
     width: 100%;
   }
 }
+
+.learner-status-panel {
+  margin-top: 15px;
+  padding: 18px;
+  border: 1px solid rgba(122, 147, 222, 0.2);
+  border-radius: 15px;
+  background: linear-gradient(125deg, rgba(42, 62, 111, 0.2), rgba(45, 35, 85, 0.17));
+}
+
+.learner-status-heading,
+.ai-recommendation-result-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.learner-status-heading h3 {
+  margin: 3px 0 0;
+  color: #e9efff;
+  font-size: 16px;
+}
+
+.learner-status-progress {
+  padding: 6px 9px;
+  border: 1px solid rgba(108, 159, 247, 0.22);
+  border-radius: 999px;
+  background: rgba(63, 105, 181, 0.16);
+  color: #b8d5ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.learner-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.learner-status-grid > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(157, 176, 216, 0.11);
+  border-radius: 11px;
+  background: rgba(7, 17, 31, 0.34);
+}
+
+.learner-status-grid span,
+.learner-status-grid strong {
+  display: block;
+}
+
+.learner-status-grid span {
+  margin-bottom: 5px;
+  color: #8fa1bb;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.learner-status-grid strong {
+  color: #dce6fa;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.learner-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.learner-status-actions button,
+.ai-inline-button {
+  margin: 0 !important;
+  padding: 9px 13px;
+  border: 1px solid rgba(122, 154, 232, 0.24);
+  border-radius: 10px;
+  background: linear-gradient(105deg, rgba(62, 112, 202, 0.94), rgba(104, 80, 188, 0.94));
+  color: #f4f7ff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.learner-status-actions button:disabled,
+.ai-inline-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.ai-recommendation-result,
+.ai-quiz-explanation {
+  margin-top: 13px;
+  padding: 14px;
+  border: 1px solid rgba(137, 149, 228, 0.2);
+  border-radius: 12px;
+  background: rgba(9, 19, 36, 0.54);
+  color: #c5d0e5;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.ai-recommendation-result-heading strong {
+  color: #e7edff;
+  font-size: 12px;
+}
+
+.ai-recommendation-result-heading span {
+  color: #97a8c4;
+  font-size: 10px;
+}
+
+.ai-recommendation-result > p {
+  margin: 9px 0 0;
+}
+
+.ai-recommendation-result > p strong,
+.practice-list-heading {
+  color: #e1e9fa;
+}
+
+.practice-list-heading {
+  display: block;
+  margin-top: 10px;
+}
+
+.ai-recommendation-result ul {
+  margin: 4px 0 0;
+  padding-left: 19px;
+}
+
+.ai-quiz-explanation > p {
+  margin: 10px 0 0;
+  white-space: pre-wrap;
+}
+
+.quiz-result .ai-inline-button {
+  margin-top: 9px !important;
+  margin-right: 8px !important;
+}
+
+.ai-learner-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.ai-learner-context span {
+  padding: 6px 9px;
+  border: 1px solid rgba(147, 163, 204, 0.16);
+  border-radius: 999px;
+  background: rgba(8, 18, 32, 0.42);
+  color: #b2c1d9;
+  font-size: 10px;
+}
+
+.ai-tutor-highlight {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-left: 2px solid #8b83ed;
+  border-radius: 0 9px 9px 0;
+  background: rgba(100, 91, 184, 0.11);
+}
+
+.ai-tutor-highlight strong {
+  color: #d9dcff;
+  font-size: 11px;
+}
+
+.ai-tutor-highlight p {
+  margin: 4px 0 0;
+  color: #bbc7dc;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+#ai-tutor-panel {
+  scroll-margin-top: 20px;
+}
+
+@media (max-width: 800px) {
+  .learner-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .learner-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .learner-status-actions {
+    flex-direction: column;
+  }
+
+  .learner-status-actions button {
+    width: 100%;
+  }
+}

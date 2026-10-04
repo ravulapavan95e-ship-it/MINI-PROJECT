@@ -78,6 +78,30 @@ interface AITutorResponse {
   daily_limit: number;
 }
 
+interface AIRecommendationResponse {
+  weak_topic: string;
+  why_review: string;
+  recommended_topic: string;
+  suggested_study_minutes: number;
+  practice_items: string[];
+  decision: "review" | "continue";
+  remaining_requests: number;
+  daily_limit: number;
+}
+
+interface AITextResponse {
+  response: string;
+  remaining_requests: number;
+  daily_limit: number;
+}
+
+interface LatestQuizAttempt {
+  topicId: string;
+  answer: string;
+  score: number;
+  correct: boolean;
+}
+
 interface QuizResponse {
 
   success: boolean;
@@ -98,6 +122,55 @@ interface QuizResponse {
 
 }
 
+function isAIRecommendationResponse(
+  value: unknown,
+): value is AIRecommendationResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "weak_topic" in value &&
+    typeof value.weak_topic === "string" &&
+    "why_review" in value &&
+    typeof value.why_review === "string" &&
+    "recommended_topic" in value &&
+    typeof value.recommended_topic === "string" &&
+    "suggested_study_minutes" in value &&
+    typeof value.suggested_study_minutes === "number" &&
+    "practice_items" in value &&
+    Array.isArray(value.practice_items) &&
+    value.practice_items.every((item) => typeof item === "string") &&
+    "decision" in value &&
+    (value.decision === "review" || value.decision === "continue") &&
+    "remaining_requests" in value &&
+    typeof value.remaining_requests === "number" &&
+    "daily_limit" in value &&
+    typeof value.daily_limit === "number"
+  );
+}
+
+function isAITextResponse(value: unknown): value is AITextResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "response" in value &&
+    typeof value.response === "string" &&
+    "remaining_requests" in value &&
+    typeof value.remaining_requests === "number" &&
+    "daily_limit" in value &&
+    typeof value.daily_limit === "number"
+  );
+}
+
+function extractTutorSection(response: string, heading: string): string {
+  const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const section = response.match(
+    new RegExp(
+      `(?:^|\\n)\\s*(?:#{1,6}\\s*)?${escapedHeading}\\s*:?\\s*\\n([\\s\\S]*?)(?=\\n\\s*#{1,6}\\s+|$)`,
+      "i",
+    ),
+  );
+  return section?.[1]?.trim() ?? "";
+}
 
 
 function App() {
@@ -151,6 +224,21 @@ const [aiTutorAnswer, setAiTutorAnswer] =
   useState<AITutorResponse | null>(null);
 const [aiTutorError, setAiTutorError] = useState("");
 const [loadingAiTutor, setLoadingAiTutor] = useState(false);
+const [aiRecommendation, setAiRecommendation] =
+  useState<AIRecommendationResponse | null>(null);
+const [aiRecommendationError, setAiRecommendationError] = useState("");
+const [loadingAiRecommendation, setLoadingAiRecommendation] = useState(false);
+const [aiQuizExplanations, setAiQuizExplanations] = useState<{
+  [topicId: string]: AITextResponse;
+}>({});
+const [aiQuizExplanationErrors, setAiQuizExplanationErrors] = useState<{
+  [topicId: string]: string;
+}>({});
+const [loadingAiQuizExplanation, setLoadingAiQuizExplanation] = useState<{
+  [topicId: string]: boolean;
+}>({});
+const [latestQuizAttempt, setLatestQuizAttempt] =
+  useState<LatestQuizAttempt | null>(null);
 
 
 
@@ -197,6 +285,10 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
     [topicId: string]: number;
 
   }>({});
+
+const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
+  [topicId: string]: string;
+}>({});
 
 
   const [submittingQuiz, setSubmittingQuiz] = useState<{
@@ -530,6 +622,45 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
     }
   };
 
+  const getLearnerContext = (topicId?: string) => {
+    const roadmap = learningPath?.roadmap ?? [];
+    const activeIndex = roadmap.findIndex(
+      (topic) => !completedTopics.includes(topic.topic_id),
+    );
+    const requestedIndex = topicId
+      ? roadmap.findIndex((topic) => topic.topic_id === topicId)
+      : activeIndex;
+    const contextTopic = roadmap[requestedIndex] ?? roadmap[activeIndex];
+    const latestScore =
+      latestQuizAttempt?.score ??
+      (contextTopic ? quizScores[contextTopic.topic_id] : undefined) ??
+      Object.values(quizScores).slice(-1)[0] ??
+      null;
+
+    return {
+      skill_level: learningPath?.current_level ?? level,
+      minutes_per_day: learningPath?.minutes_per_day ?? minutes,
+      current_topic: contextTopic?.topic_id ?? null,
+      learning_goal: learningPath?.goal ?? goal,
+      completed_topics: completedTopics,
+      recent_quiz_score: latestScore,
+      topics_to_review:
+        roadmap
+          .filter(
+            (topic) =>
+              quizScores[topic.topic_id] !== undefined &&
+              quizScores[topic.topic_id] < 100,
+          )
+          .map((topic) => topic.topic_id),
+      roadmap_topic_ids: roadmap.map((topic) => topic.topic_id),
+      current_topic_position: requestedIndex >= 0 ? requestedIndex + 1 : null,
+      roadmap_length: roadmap.length || null,
+      quiz_scores: quizScores,
+      latest_quiz_topic_id:
+        latestQuizAttempt?.topicId ?? topicId ?? null,
+    };
+  };
+
   const askAiTutor = async () => {
     const learnerQuestion = aiTutorQuestion.trim();
     if (!learnerQuestion) {
@@ -537,15 +668,6 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
       setAiTutorAnswer(null);
       return;
     }
-
-    const currentTopic =
-      currentTopicIndex >= 0
-        ? learningPath?.roadmap[currentTopicIndex]
-        : undefined;
-    const recentQuizScore =
-      (currentTopic && quizScores[currentTopic.topic_id]) ??
-      Object.values(quizScores).slice(-1)[0] ??
-      null;
 
     setLoadingAiTutor(true);
     setAiTutorError("");
@@ -559,12 +681,7 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
         },
         body: JSON.stringify({
           question: learnerQuestion,
-          skill_level: learningPath?.current_level ?? level,
-          current_topic: currentTopic?.topic ?? null,
-          learning_goal: learningPath?.goal ?? goal,
-          completed_topics: completedTopics,
-          recent_quiz_score: recentQuizScore,
-          topics_to_review: reviewedTopics.map((topic) => topic.topic),
+          ...getLearnerContext(),
         }),
       });
       const data = await response.json();
@@ -598,6 +715,115 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
       );
     } finally {
       setLoadingAiTutor(false);
+    }
+  };
+
+  const requestAiRecommendation = async () => {
+    setLoadingAiRecommendation(true);
+    setAiRecommendationError("");
+    setAiRecommendation(null);
+
+    try {
+      const response = await fetch(`${API_URL}/ai-recommendation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...getLearnerContext(latestQuizAttempt?.topicId),
+          latest_quiz_score: latestQuizAttempt?.score ?? null,
+          incorrect_answers:
+            latestQuizAttempt && !latestQuizAttempt.correct
+              ? [latestQuizAttempt.answer]
+              : [],
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.detail === "string"
+            ? data.detail
+            : "Could not get an AI study recommendation. Please try again.",
+        );
+      }
+
+      if (!isAIRecommendationResponse(data)) {
+        throw new Error("The AI recommendation returned an invalid response.");
+      }
+      setAiRecommendation(data);
+    } catch (error) {
+      setAiRecommendationError(
+        error instanceof Error
+          ? error.message
+          : "Could not reach AI study recommendations. Please try again.",
+      );
+    } finally {
+      setLoadingAiRecommendation(false);
+    }
+  };
+
+  const explainQuizAnswer = async (topicId: string) => {
+    const answer = submittedQuizAnswers[topicId];
+    if (!answer) {
+      setAiQuizExplanationErrors((previous) => ({
+        ...previous,
+        [topicId]: "Submit an answer before requesting an explanation.",
+      }));
+      return;
+    }
+
+    setLoadingAiQuizExplanation((previous) => ({
+      ...previous,
+      [topicId]: true,
+    }));
+    setAiQuizExplanationErrors((previous) => ({
+      ...previous,
+      [topicId]: "",
+    }));
+
+    try {
+      const response = await fetch(`${API_URL}/ai-quiz-explanation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...getLearnerContext(topicId),
+          topic_id: topicId,
+          user_answer: answer,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.detail === "string"
+            ? data.detail
+            : "Could not explain this answer. Please try again.",
+        );
+      }
+
+      if (!isAITextResponse(data)) {
+        throw new Error("The AI tutor returned an invalid explanation.");
+      }
+      setAiQuizExplanations((previous) => ({
+        ...previous,
+        [topicId]: data,
+      }));
+    } catch (error) {
+      setAiQuizExplanationErrors((previous) => ({
+        ...previous,
+        [topicId]:
+          error instanceof Error
+            ? error.message
+            : "Could not reach the AI tutor. Please try again.",
+      }));
+    } finally {
+      setLoadingAiQuizExplanation((previous) => ({
+        ...previous,
+        [topicId]: false,
+      }));
     }
   };
 
@@ -824,6 +1050,21 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
 
       }));
 
+      if (data.success) {
+        const score = typeof data.score === "number" ? data.score : 0;
+        setSubmittedQuizAnswers((previous) => ({
+          ...previous,
+          [topicId]: answer,
+        }));
+        setLatestQuizAttempt({
+          topicId,
+          answer,
+          score,
+          correct: data.correct === true,
+        });
+        setAiRecommendation(null);
+        setAiRecommendationError("");
+      }
 
 
 
@@ -975,7 +1216,15 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
 
     setQuizResults({});
 
+
+
     setQuizAnswers({});
+    setSubmittedQuizAnswers({});
+    setLatestQuizAttempt(null);
+    setAiRecommendation(null);
+    setAiRecommendationError("");
+    setAiQuizExplanations({});
+    setAiQuizExplanationErrors({});
 
 
 
@@ -1977,6 +2226,107 @@ const [loadingAiTutor, setLoadingAiTutor] = useState(false);
 
               </div>
 
+              <section className="learner-status-panel" aria-labelledby="learner-status-heading">
+                <div className="learner-status-heading">
+                  <div>
+                    <span className="eyebrow">PERSONALIZED LEARNING SNAPSHOT</span>
+                    <h3 id="learner-status-heading">Your Learning Status</h3>
+                  </div>
+                  <span className="learner-status-progress">{progressPercentage}% complete</span>
+                </div>
+                <div className="learner-status-grid">
+                  <div>
+                    <span>Current topic</span>
+                    <strong>
+                      {currentTopicIndex >= 0
+                        ? learningPath.roadmap[currentTopicIndex].topic
+                        : "Roadmap complete"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Latest quiz score</span>
+                    <strong>
+                      {latestQuizAttempt
+                        ? `${latestQuizAttempt.score}%`
+                        : "Not attempted yet"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Topics to review</span>
+                    <strong>
+                      {reviewedTopics.length > 0
+                        ? reviewedTopics.map((topic) => topic.topic).join(", ")
+                        : "None identified"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Study time</span>
+                    <strong>{learningPath.minutes_per_day} min/day</strong>
+                  </div>
+                </div>
+                <div className="learner-status-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document.getElementById("ai-tutor-panel")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      })
+                    }
+                  >
+                    Ask AI Tutor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void requestAiRecommendation()}
+                    disabled={loadingAiRecommendation}
+                  >
+                    {loadingAiRecommendation
+                      ? "Preparing recommendation..."
+                      : "Get AI Recommendation"}
+                  </button>
+                </div>
+                {aiRecommendationError && (
+                  <p className="ai-tutor-error" role="alert">
+                    {aiRecommendationError}
+                  </p>
+                )}
+                {aiRecommendation && (
+                  <div className="ai-recommendation-result" aria-live="polite">
+                    <div className="ai-recommendation-result-heading">
+                      <strong>
+                        {aiRecommendation.decision === "review"
+                          ? "Review recommended"
+                          : "Recommended Next Step"}
+                      </strong>
+                      <span>
+                        {aiRecommendation.remaining_requests} of{" "}
+                        {aiRecommendation.daily_limit} AI requests remaining today
+                      </span>
+                    </div>
+                    <p>
+                      <strong>Weak topic:</strong> {aiRecommendation.weak_topic}
+                    </p>
+                    <p>
+                      <strong>Why:</strong> {aiRecommendation.why_review}
+                    </p>
+                    <p>
+                      <strong>Recommended topic:</strong>{" "}
+                      {aiRecommendation.recommended_topic}
+                    </p>
+                    <p>
+                      <strong>Suggested study time:</strong>{" "}
+                      {aiRecommendation.suggested_study_minutes} minutes
+                    </p>
+                    <strong className="practice-list-heading">Practice next</strong>
+                    <ul>
+                      {aiRecommendation.practice_items.map((item, index) => (
+                        <li key={`${index}-${item}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </section>
 
 
             </div>
@@ -2493,7 +2843,66 @@ className={
 
                                 )}
 
+                              {!quizResult.correct && (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="ai-inline-button"
+                                    onClick={() => void explainQuizAnswer(item.topic_id)}
+                                    disabled={
+                                      !!loadingAiQuizExplanation[item.topic_id]
+                                    }
+                                  >
+                                    {loadingAiQuizExplanation[item.topic_id]
+                                      ? "Preparing explanation..."
+                                      : "Explain this answer"}
+                                  </button>
+                                  {aiQuizExplanationErrors[item.topic_id] && (
+                                    <p className="ai-tutor-error" role="alert">
+                                      {aiQuizExplanationErrors[item.topic_id]}
+                                    </p>
+                                  )}
+                                  {aiQuizExplanations[item.topic_id] && (
+                                    <div
+                                      className="ai-quiz-explanation"
+                                      aria-live="polite"
+                                    >
+                                      <div className="ai-recommendation-result-heading">
+                                        <strong>AI answer explanation</strong>
+                                        <span>
+                                          {
+                                            aiQuizExplanations[item.topic_id]
+                                              .remaining_requests
+                                          }{" "}
+                                          of{" "}
+                                          {
+                                            aiQuizExplanations[item.topic_id]
+                                              .daily_limit
+                                          }{" "}
+                                          AI requests remaining today
+                                        </span>
+                                      </div>
+                                      <p>
+                                        {
+                                          aiQuizExplanations[item.topic_id]
+                                            .response
+                                        }
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
+                              )}
 
+                              <button
+                                type="button"
+                                className="ai-inline-button"
+                                onClick={() => void requestAiRecommendation()}
+                                disabled={loadingAiRecommendation}
+                              >
+                                {loadingAiRecommendation
+                                  ? "Preparing recommendation..."
+                                  : "Get AI Study Recommendation"}
+                              </button>
 
                               {/* ADAPTIVE RECOMMENDATION */}
 
@@ -2907,7 +3316,11 @@ Learning Assistant
 
         </section>
 
-        <section className="card ai-tutor-card" aria-labelledby="ai-tutor-heading">
+        <section
+          id="ai-tutor-panel"
+          className="card ai-tutor-card"
+          aria-labelledby="ai-tutor-heading"
+        >
           <div className="ai-tutor-heading">
             <span className="ai-tutor-orb" aria-hidden="true">✦</span>
             <div>
@@ -2920,6 +3333,19 @@ Learning Assistant
             your learning level, goal, topic progress, and available quiz results
             to tailor its response.
           </p>
+          <div className="ai-learner-context" aria-label="Current learning context">
+            <span>Learning level: {learningPath?.current_level ?? level}</span>
+            <span>
+              Current topic:{" "}
+              {currentTopicIndex >= 0
+                ? learningPath?.roadmap[currentTopicIndex].topic
+                : "Not selected"}
+            </span>
+            <span>
+              Latest quiz score:{" "}
+              {latestQuizAttempt ? `${latestQuizAttempt.score}%` : "Not attempted"}
+            </span>
+          </div>
           <form
             className="ai-tutor-form"
             onSubmit={(event) => {
@@ -2964,6 +3390,34 @@ Learning Assistant
                 </span>
               </div>
               <p>{aiTutorAnswer.response}</p>
+              {extractTutorSection(
+                aiTutorAnswer.response,
+                "Suggested next topic",
+              ) && (
+                <div className="ai-tutor-highlight">
+                  <strong>Recommended next topic</strong>
+                  <p>
+                    {extractTutorSection(
+                      aiTutorAnswer.response,
+                      "Suggested next topic",
+                    )}
+                  </p>
+                </div>
+              )}
+              {extractTutorSection(
+                aiTutorAnswer.response,
+                "Practice question",
+              ) && (
+                <div className="ai-tutor-highlight">
+                  <strong>Practice question</strong>
+                  <p>
+                    {extractTutorSection(
+                      aiTutorAnswer.response,
+                      "Practice question",
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </section>

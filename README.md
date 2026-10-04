@@ -39,17 +39,21 @@ progress tracking remain available.
   returns a topic explanation, practice question, answer, and match score.
 - **AI Learning Tutor:** Uses the Google Gemini API to provide a natural
   language explanation, example, common mistake, practice question, hint, and
-  suggested next topic. The tutor can use the available skill level, learning
-  goal, current topic, completed topics, quiz score, and review topics as
-  learning context.
+  suggested next topic, adapted to the learner's level and available progress
+  context.
+- **AI Study Recommendation:** Combines quiz scores and weak topics with
+  prerequisite-checked roadmap order to suggest whether to review or continue,
+  a study duration, and practice activities.
+- **AI quiz explanation:** After an incorrect answer, explains the tested
+  concept, the expected answer, and a short practice prompt.
 - **Topic quizzes:** Checks submitted answers and provides a score, feedback,
   the correct answer when applicable, and an adaptive recommendation.
 - **Progress tracking:** Allows learners to mark topics complete and saves
   completed topics and quiz scores in browser `localStorage`.
 - **Learning analytics:** Displays roadmap progress, completed topics, quiz
   attempts, average quiz score, topics for review, and a recommendation.
-- **Daily AI usage limit:** Limits AI Tutor requests using the server-side
-  `AI_DAILY_LIMIT` setting, which defaults to 100 requests per UTC day.
+- **Daily AI usage limit:** Applies the server-side `AI_DAILY_LIMIT` setting
+  across Gemini-powered features; it defaults to 100 requests per UTC day.
 
 ## 4. Technology Stack
 
@@ -126,12 +130,14 @@ API key is kept on the server and is not sent to the frontend.
 4. The learner can use the existing Learning Assistant, submit topic answers
    to quizzes, and mark topics as complete.
 5. For AI assistance, the learner submits a question to `POST /ai-tutor`. The
-   frontend includes available learning context, such as skill level, current
-   topic, completed topics, recent quiz score, and topics to review.
-6. FastAPI applies the daily usage limit and sends the question and context to
-   Gemini. It returns the tutor response and remaining daily requests to the
-   frontend.
-7. The application updates its progress and analytics from the learner's
+   frontend includes concise learner context, such as skill level, available
+   study time, roadmap position, quiz scores, and weak topics.
+6. After a quiz, the learner can request an AI Study Recommendation or ask for
+   an explanation of an incorrect answer. FastAPI validates the quiz topic and
+   uses prerequisite-aware roadmap order to choose a valid next topic.
+7. FastAPI applies the daily usage limit to each Gemini request and returns
+   personalized explanations or study guidance to the frontend.
+8. The application updates its progress and analytics from the learner's
    completed topics and quiz scores.
 
 ## 7. Project Structure
@@ -224,6 +230,8 @@ npm run build
 | `POST` | `/learning-path` | Generates a personalized roadmap. |
 | `POST` | `/quiz` | Checks a topic answer and returns feedback. |
 | `POST` | `/ai-tutor` | Returns a Gemini-powered response using the supplied learner context. |
+| `POST` | `/ai-recommendation` | Returns a Gemini-assisted study recommendation while preserving prerequisite-based topic order. |
+| `POST` | `/ai-quiz-explanation` | Explains an incorrect answer for a known quiz topic. |
 
 ## 10. Configuration and Usage Limit
 
