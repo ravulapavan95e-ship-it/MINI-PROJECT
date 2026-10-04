@@ -931,8 +931,12 @@ function App() {
 
 
   const totalTopics =
-
     learningPath?.roadmap.length || 0;
+
+  const currentTopicIndex =
+    learningPath?.roadmap.findIndex(
+      (topic) => !completedTopics.includes(topic.topic_id)
+    ) ?? -1;
 
 
 
@@ -1148,28 +1152,75 @@ function App() {
         <div className="header-inner">
           <div className="brand-mark" aria-hidden="true">✦</div>
           <div className="brand-copy">
-            <div className="eyebrow">LEARNING MISSION CONTROL</div>
+            <div className="eyebrow">PERSONALIZED LEARNING WORKSPACE</div>
             <h1>Personalized Learning Assistant</h1>
             <p>
-              A hybrid intelligent learning workspace that adapts your Python roadmap,
-              practice, progress and knowledge support around your learning goal.
+              A focused space to build skills, practice concepts, and track your progress.
             </p>
           </div>
           <div className="system-pill">
             <span className="status-dot" />
-            <span>Hybrid rule-based + knowledge-based assistant</span>
+            <span>System Online</span>
           </div>
         </div>
       </header>
 
       <section className="mission-hero" aria-label="Python learning universe">
         <div className="hero-copy">
-          <span className="eyebrow">PYTHON LEARNING UNIVERSE</span>
+          <span className="eyebrow">YOUR PERSONALIZED LEARNING JOURNEY</span>
           <h2>Build your path.<br /><span>Master one concept at a time.</span></h2>
           <p>
             Generate an adaptive roadmap and use your progress and quiz results to decide
             what to continue or review next.
           </p>
+          <form
+            className="hero-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void generatePath();
+            }}
+          >
+            <label htmlFor="learning-goal">Learning goal</label>
+            <input
+              id="learning-goal"
+              type="text"
+              placeholder="What would you like to learn?"
+              value={goal}
+              onChange={(event) => setGoal(event.target.value)}
+            />
+            <div className="hero-form-row">
+              <div>
+                <label htmlFor="learning-level">Skill level</label>
+                <select
+                  id="learning-level"
+                  value={level}
+                  onChange={(event) => setLevel(event.target.value)}
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="study-minutes">Study time per day</label>
+                <div className="minutes-input">
+                  <input
+                    id="study-minutes"
+                    type="number"
+                    min="10"
+                    max="480"
+                    value={minutes}
+                    onChange={(event) => setMinutes(Number(event.target.value))}
+                  />
+                  <span>min</span>
+                </div>
+              </div>
+            </div>
+            <button type="submit" disabled={loadingPath}>
+              {loadingPath ? "Generating..." : "Generate Learning Path"}
+              <span aria-hidden="true">→</span>
+            </button>
+          </form>
           <div className="hero-stats">
             <div><strong>{completedTopics.length}</strong><span>topics mastered</span></div>
             <div><strong>{Object.keys(quizScores).length}</strong><span>quiz attempts</span></div>
@@ -1195,6 +1246,25 @@ function App() {
         </div>
       </section>
 
+      <section className="stats-grid" aria-label="Learning statistics">
+        <div className="stat-card">
+          <span className="stat-icon">✓</span>
+          <div><strong>{completedTopics.length}</strong><span>Topics mastered</span></div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon">↗</span>
+          <div><strong>{quizCompletedCount}</strong><span>Quiz attempts</span></div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon">⌘</span>
+          <div><strong>{totalTopics}</strong><span>Roadmap topics</span></div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon">%</span>
+          <div><strong>{averageQuizScore}%</strong><span>Average quiz score</span></div>
+        </div>
+      </section>
+
       <main className="container">
 
 
@@ -1203,7 +1273,7 @@ function App() {
 
 
 
-        <section className="card">
+<section className="card path-setup-card">
 
 
 
@@ -1914,7 +1984,7 @@ function App() {
 
               {learningPath.roadmap.map(
 
-                (item) => {
+(item, index) => {
 
 
 
@@ -1942,7 +2012,13 @@ function App() {
 
                     <div
 
-                      className="topic"
+className={
+  isCompleted
+    ? "topic completed"
+    : index === currentTopicIndex
+      ? "topic current"
+      : "topic upcoming"
+}
 
                       key={
 
@@ -2035,10 +2111,23 @@ function App() {
                           }}
 
                         >
-
                           {item.topic}
-
                         </h3>
+
+                        <div className="topic-meta">
+                          <span>{learningPath.current_level}</span>
+                          <span>{item.estimated_minutes} min</span>
+                          {quizScores[item.topic_id] !== undefined && (
+                            <span>Quiz score {quizScores[item.topic_id]}%</span>
+                          )}
+                          <span className="topic-status">
+                            {isCompleted
+                              ? "Prerequisite complete"
+                              : index === currentTopicIndex
+                                ? "Current focus"
+                                : "Up next"}
+                          </span>
+                        </div>
 
 
 
@@ -2225,10 +2314,13 @@ function App() {
 
 
                           {quizResult && (
-
                             <div
-
-                              style={{
+                              className={
+                                quizResult.correct
+                                  ? "quiz-result quiz-result-correct"
+                                  : "quiz-result quiz-result-incorrect"
+                              }
+                              style={{
 
                                 marginTop:
 
@@ -2329,8 +2421,8 @@ function App() {
 
 
                               <div
-
-                                style={{
+                                className="quiz-recommendation"
+                                style={{
 
                                   marginTop:
 
@@ -2404,12 +2496,9 @@ function App() {
 
 
 
-                        <small>
-
+                        <small className="topic-estimate">
                           Estimated time:{" "}
-
                           {
-
                             item.estimated_minutes
 
                           }{" "}
@@ -2512,7 +2601,8 @@ function App() {
 
           <h2>
 
-            💬 Learning Assistant
+<span className="assistant-orb" aria-hidden="true">✦</span>
+Learning Assistant
 
           </h2>
 
@@ -2597,14 +2687,20 @@ function App() {
 
 
           {chatAnswer && (
-
             <div className="chat-result">
 
+              {chatAnswer.success && chatAnswer.response && (
+                <div className="assistant-response-meta">
+                  <span>Topic: {chatAnswer.response.topic}</span>
+                  <span>
+                    Confidence score: {chatAnswer.response.confidence}
+                  </span>
+                </div>
+              )}
 
 
-              {chatAnswer.success &&
-
-              chatAnswer.response ? (
+              {chatAnswer.success &&
+              chatAnswer.response ? (
 
                 <>
 
@@ -2742,17 +2838,11 @@ function App() {
 
 
 
-      <footer>
-
-        <p>
-
-          Hybrid Intelligent Personalized
-
-          Learning Assistant
-
-        </p>
-
-      </footer>
+      <footer>
+        <p>
+          Personalized Learning Assistant <span>·</span> Learn with intention, one concept at a time.
+        </p>
+      </footer>
 
 
 
