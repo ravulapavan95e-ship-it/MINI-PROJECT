@@ -1,0 +1,576 @@
+{
+  "subject": "Python",
+  "topics": [
+    {
+      "id": "python_basics",
+      "title": "Python Basics",
+      "level": "beginner",
+      "keywords": [
+        "basics",
+        "python basics",
+        "introduction",
+        "start learning python",
+        "what is python"
+      ],
+      "prerequisites": [],
+      "explanation": "Python is a high-level, general-purpose programming language used to build applications, automate tasks, and analyze data.",
+      "practice_question": "What is Python?",
+      "answer": "Python is a high-level, general-purpose programming language."
+    },
+    {
+      "id": "variables",
+      "title": "Variables",
+      "level": "beginner",
+      "keywords": [
+        "variable",
+        "variables",
+        "assign",
+        "assignment",
+        "store data"
+      ],
+      "prerequisites": [
+        "python_basics"
+      ],
+      "explanation": "A variable is a name used to store a value. Example: age = 20.",
+      "practice_question": "Write a Python statement that stores 25 in a variable named age.",
+      "answer": "age = 25"
+    },
+    {
+      "id": "data_types",
+      "title": "Data Types",
+      "level": "beginner",
+      "keywords": [
+        "data type",
+        "data types",
+        "types",
+        "integer",
+        "string",
+        "float",
+        "boolean",
+        "int",
+        "str",
+        "bool"
+      ],
+      "prerequisites": [
+        "variables"
+      ],
+      "explanation": "Common Python data types include int for integers, float for decimal numbers, str for text, and bool for True or False values.",
+      "practice_question": "What is the data type of the value 'Hello'?",
+      "answer": "str (string)"
+    },
+    {
+      "id": "operators",
+      "title": "Operators",
+      "level": "beginner",
+      "keywords": [
+        "operator",
+        "operators",
+        "arithmetic",
+        "comparison",
+        "logical operators",
+        "addition",
+        "subtraction",
+        "multiplication"
+      ],
+      "prerequisites": [
+        "variables",
+        "data_types"
+      ],
+      "explanation": "Python operators are used to perform calculations, comparisons, assignments, and logical operations.",
+      "practice_question": "What is the result of 10 + 5 in Python?",
+      "answer": "15"
+    },
+    {
+      "id": "conditional_statements",
+      "title": "Conditional Statements",
+      "level": "beginner",
+      "keywords": [
+        "if",
+        "else",
+        "elif",
+        "condition",
+        "conditional",
+        "conditional statements"
+      ],
+      "prerequisites": [
+        "operators"
+      ],
+      "explanation": "Conditional statements allow a Python program to make decisions based on whether a condition is True or False.",
+      "practice_question": "Write an if statement that prints 'Adult' when age is greater than or equal to 18.",
+      "answer": "if age >= 18: print('Adult')"
+    },
+    {
+      "id": "loops",
+      "title": "Loops",
+      "level": "beginner",
+      "keywords": [
+        "loop",
+        "loops",
+        "for loop",
+        "while loop",
+        "iteration",
+        "iterate"
+      ],
+      "prerequisites": [
+        "conditional_statements"
+      ],
+      "explanation": "Loops are used to repeatedly execute a block of Python code. Common loops are for and while.",
+      "practice_question": "Which Python loop is commonly used to iterate through a list?",
+      "answer": "The for loop."
+    },
+    {
+      "id": "strings",
+      "title": "Strings",
+      "level": "beginner",
+      "keywords": [
+        "string",
+        "strings",
+        "text",
+        "str",
+        "string methods",
+        "upper",
+        "lower",
+        "replace",
+        "split"
+      ],
+      "prerequisites": [
+        "data_types",
+        "variables"
+      ],
+      "explanation": "A string is a sequence of characters used to represent text in Python. Strings support indexing, slicing, and useful methods such as upper(), lower(), replace(), and split().",
+      "practice_question": "Which Python method converts a string to uppercase?",
+      "answer": "The upper() method."
+    },
+    {
+      "id": "functions",
+      "title": "Functions",
+      "level": "intermediate",
+      "keywords": [
+        "function",
+        "functions",
+        "def",
+        "define function",
+        "return",
+        "parameters",
+        "arguments"
+      ],
+      "prerequisites": [
+        "loops",
+        "conditional_statements"
+      ],
+      "explanation": "A function is a reusable block of code that performs a specific task. Functions are defined using the def keyword.",
+      "practice_question": "Write a function named add that accepts two numbers and returns their sum.",
+      "answer": "def add(a, b): return a + b"
+    },
+    {
+      "id": "lists",
+      "title": "Lists",
+      "level": "intermediate",
+      "keywords": [
+        "list",
+        "lists",
+        "list methods",
+        "append",
+        "remove",
+        "index"
+      ],
+      "prerequisites": [
+        "data_types",
+        "loops"
+      ],
+      "explanation": "A list is an ordered and changeable collection that can store multiple values in Python.",
+      "practice_question": "How do you add an item to the end of a Python list?",
+      "answer": "Use the append() method."
+    },
+    {
+      "id": "dictionaries",
+      "title": "Dictionaries",
+      "level": "intermediate",
+      "keywords": [
+        "dictionary",
+        "dictionaries",
+        "dict",
+        "key",
+        "value",
+        "key value"
+      ],
+      "prerequisites": [
+        "lists",
+        "data_types"
+      ],
+      "explanation": "A dictionary stores data as key-value pairs. Each key is used to access its corresponding value.",
+      "practice_question": "How do you create a Python dictionary containing a name and age?",
+      "answer": "student = {'name': 'John', 'age': 20}"
+    },
+    {
+      "id": "tuples_sets",
+      "title": "Tuples and Sets",
+      "level": "intermediate",
+      "keywords": [
+        "tuple",
+        "tuples",
+        "set",
+        "sets",
+        "immutable",
+        "unique values"
+      ],
+      "prerequisites": [
+        "lists"
+      ],
+      "explanation": "Tuples are ordered and immutable collections, while sets are unordered collections that store unique values.",
+      "practice_question": "Which Python collection automatically removes duplicate values?",
+      "answer": "A set."
+    },
+    {
+      "id": "list_comprehensions",
+      "title": "List Comprehensions",
+      "level": "intermediate",
+      "keywords": [
+        "list comprehension",
+        "list comprehensions",
+        "comprehension",
+        "comprehensions",
+        "list creation"
+      ],
+      "prerequisites": [
+        "lists",
+        "loops",
+        "conditional_statements"
+      ],
+      "explanation": "List comprehensions provide a concise way to create lists from an iterable, optionally applying a condition.",
+      "practice_question": "What Python feature provides a concise way to create a list using an expression and a loop?",
+      "answer": "List comprehension."
+    },
+    {
+      "id": "lambda_functions",
+      "title": "Lambda Functions",
+      "level": "intermediate",
+      "keywords": [
+        "lambda",
+        "lambda function",
+        "anonymous function",
+        "anonymous functions"
+      ],
+      "prerequisites": [
+        "functions"
+      ],
+      "explanation": "A lambda function is a small anonymous function written using the lambda keyword. It can accept arguments and return an expression.",
+      "practice_question": "Which keyword is used to create an anonymous function in Python?",
+      "answer": "The lambda keyword."
+    },
+    {
+      "id": "map_filter_reduce",
+      "title": "Map, Filter and Reduce",
+      "level": "intermediate",
+      "keywords": [
+        "map",
+        "filter",
+        "reduce",
+        "map function",
+        "filter function",
+        "reduce function",
+        "functional programming"
+      ],
+      "prerequisites": [
+        "functions",
+        "lists"
+      ],
+      "explanation": "map() transforms items, filter() selects items based on a condition, and reduce() combines values into a single result.",
+      "practice_question": "Which function is used to select elements from an iterable based on a condition?",
+      "answer": "The filter() function."
+    },
+    {
+      "id": "recursion",
+      "title": "Recursion",
+      "level": "intermediate",
+      "keywords": [
+        "recursion",
+        "recursive",
+        "recursive function",
+        "base case"
+      ],
+      "prerequisites": [
+        "functions",
+        "conditional_statements"
+      ],
+      "explanation": "Recursion occurs when a function calls itself to solve a problem. A recursive function normally requires a base case to stop the recursion.",
+      "practice_question": "What is required to stop a recursive function from continuing indefinitely?",
+      "answer": "A base case."
+    },
+    {
+      "id": "args_kwargs",
+      "title": "Args and Kwargs",
+      "level": "intermediate",
+      "keywords": [
+        "args",
+        "kwargs",
+        "*args",
+        "**kwargs",
+        "variable arguments",
+        "keyword arguments"
+      ],
+      "prerequisites": [
+        "functions"
+      ],
+      "explanation": "*args allows a function to accept a variable number of positional arguments, while **kwargs allows a variable number of keyword arguments.",
+      "practice_question": "Which syntax allows a Python function to accept a variable number of keyword arguments?",
+      "answer": "**kwargs"
+    },
+    {
+      "id": "file_handling",
+      "title": "File Handling",
+      "level": "intermediate",
+      "keywords": [
+        "file",
+        "files",
+        "file handling",
+        "read file",
+        "write file",
+        "open",
+        "close"
+      ],
+      "prerequisites": [
+        "functions",
+        "lists"
+      ],
+      "explanation": "Python provides file handling features for reading and writing data stored in files using functions such as open().",
+      "practice_question": "Which Python function is used to open a file?",
+      "answer": "The open() function."
+    },
+    {
+      "id": "json_handling",
+      "title": "JSON Handling",
+      "level": "intermediate",
+      "keywords": [
+        "json",
+        "json handling",
+        "json file",
+        "json data",
+        "json module",
+        "loads",
+        "dumps"
+      ],
+      "prerequisites": [
+        "dictionaries",
+        "file_handling"
+      ],
+      "explanation": "Python's json module allows programs to encode and decode JSON data using functions such as dumps(), loads(), dump(), and load().",
+      "practice_question": "Which Python module is commonly used to work with JSON data?",
+      "answer": "The json module."
+    },
+    {
+      "id": "datetime",
+      "title": "Date and Time",
+      "level": "intermediate",
+      "keywords": [
+        "datetime",
+        "date",
+        "time",
+        "date time",
+        "current date",
+        "current time"
+      ],
+      "prerequisites": [
+        "modules_packages",
+        "functions"
+      ],
+      "explanation": "Python provides the datetime module for working with dates and times.",
+      "practice_question": "Which Python module is commonly used for working with dates and times?",
+      "answer": "The datetime module."
+    },
+    {
+      "id": "regular_expressions",
+      "title": "Regular Expressions",
+      "level": "intermediate",
+      "keywords": [
+        "regular expression",
+        "regular expressions",
+        "regex",
+        "regexp",
+        "re module",
+        "pattern matching"
+      ],
+      "prerequisites": [
+        "strings",
+        "functions"
+      ],
+      "explanation": "Regular expressions are patterns used to search, match, and manipulate text. Python provides regular expression support through the re module.",
+      "practice_question": "Which Python module provides support for regular expressions?",
+      "answer": "The re module."
+    },
+    {
+      "id": "exception_handling",
+      "title": "Exception Handling",
+      "level": "intermediate",
+      "keywords": [
+        "exception",
+        "exceptions",
+        "error handling",
+        "try",
+        "except",
+        "finally"
+      ],
+      "prerequisites": [
+        "functions"
+      ],
+      "explanation": "Exception handling allows Python programs to handle runtime errors using try, except, else, and finally blocks.",
+      "practice_question": "Which keyword is used to catch an exception in Python?",
+      "answer": "The except keyword."
+    },
+    {
+      "id": "object_oriented_programming",
+      "title": "Object-Oriented Programming",
+      "level": "advanced",
+      "keywords": [
+        "oop",
+        "object oriented programming",
+        "class",
+        "object",
+        "objects",
+        "methods",
+        "attributes"
+      ],
+      "prerequisites": [
+        "functions",
+        "dictionaries"
+      ],
+      "explanation": "Object-oriented programming organizes programs using classes and objects. Classes can contain attributes and methods.",
+      "practice_question": "Which keyword is used to define a class in Python?",
+      "answer": "The class keyword."
+    },
+    {
+      "id": "inheritance",
+      "title": "Inheritance",
+      "level": "advanced",
+      "keywords": [
+        "inheritance",
+        "parent class",
+        "child class",
+        "base class",
+        "derived class"
+      ],
+      "prerequisites": [
+        "object_oriented_programming"
+      ],
+      "explanation": "Inheritance allows a class to reuse and extend attributes and methods from another class.",
+      "practice_question": "What is inheritance in Python?",
+      "answer": "Inheritance allows one class to reuse and extend another class."
+    },
+    {
+      "id": "decorators",
+      "title": "Decorators",
+      "level": "advanced",
+      "keywords": [
+        "decorator",
+        "decorators",
+        "wrapper",
+        "@",
+        "function decorator"
+      ],
+      "prerequisites": [
+        "functions"
+      ],
+      "explanation": "Decorators are functions that modify or extend the behavior of another function without changing its original code.",
+      "practice_question": "Which symbol is commonly used to apply a decorator in Python?",
+      "answer": "The @ symbol."
+    },
+    {
+      "id": "generators",
+      "title": "Generators",
+      "level": "advanced",
+      "keywords": [
+        "generator",
+        "generators",
+        "yield",
+        "iterator",
+        "iterators"
+      ],
+      "prerequisites": [
+        "functions",
+        "loops"
+      ],
+      "explanation": "Generators produce values one at a time using the yield keyword, which can help reduce memory usage.",
+      "practice_question": "Which keyword is used to produce values from a Python generator?",
+      "answer": "The yield keyword."
+    },
+    {
+      "id": "modules_packages",
+      "title": "Modules and Packages",
+      "level": "advanced",
+      "keywords": [
+        "module",
+        "modules",
+        "package",
+        "packages",
+        "import",
+        "import module"
+      ],
+      "prerequisites": [
+        "functions",
+        "object_oriented_programming"
+      ],
+      "explanation": "Modules allow Python code to be organized into reusable files, while packages organize related modules into directories.",
+      "practice_question": "Which keyword is commonly used to include a module in a Python program?",
+      "answer": "The import keyword."
+    },
+    {
+      "id": "virtual_environments",
+      "title": "Virtual Environments",
+      "level": "advanced",
+      "keywords": [
+        "virtual environment",
+        "virtual environments",
+        "venv",
+        "environment",
+        "python environment",
+        "isolated environment"
+      ],
+      "prerequisites": [
+        "modules_packages"
+      ],
+      "explanation": "A virtual environment creates an isolated Python environment so that project dependencies can be installed separately.",
+      "practice_question": "Which Python module is commonly used to create a virtual environment?",
+      "answer": "The venv module."
+    },
+    {
+      "id": "pip_package_management",
+      "title": "Pip and Package Management",
+      "level": "advanced",
+      "keywords": [
+        "pip",
+        "package management",
+        "install package",
+        "python package",
+        "pip install",
+        "packages"
+      ],
+      "prerequisites": [
+        "modules_packages",
+        "virtual_environments"
+      ],
+      "explanation": "pip is a package management tool commonly used to install and manage Python packages.",
+      "practice_question": "Which command is commonly used to install a Python package with pip?",
+      "answer": "pip install package_name"
+    },
+    {
+      "id": "testing",
+      "title": "Python Testing",
+      "level": "advanced",
+      "keywords": [
+        "testing",
+        "test",
+        "unit testing",
+        "unittest",
+        "pytest",
+        "test cases"
+      ],
+      "prerequisites": [
+        "functions",
+        "exception_handling"
+      ],
+      "explanation": "Testing helps verify that Python programs behave as expected. Unit tests check individual parts of a program.",
+      "practice_question": "Why is testing important in software development?",
+      "answer": "Testing helps find errors and verify that software behaves as expected."
+    }
+  ]
+}
