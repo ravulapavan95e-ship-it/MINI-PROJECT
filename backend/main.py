@@ -303,6 +303,7 @@ def _generate_gemini_text(
                 generation_config={
                     "temperature": 0.4,
                     "max_output_tokens": max_output_tokens,
+                    "thinking_level": "low",
                 },
             )
     except GeminiAPITimeoutError as error:
