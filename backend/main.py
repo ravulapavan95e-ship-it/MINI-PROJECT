@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime, timezone
 from logging import getLogger
+import asyncio
 import os
 from threading import Lock
 from typing import Annotated, Dict, List, Literal, Optional
@@ -27,6 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 logger = getLogger(__name__)
 GEMINI_MODEL = "gemini-3.8-flash"
+AI_TUTOR_TIMEOUT_SECONDS = 50
 MAX_AI_REQUESTS_PER_DAY = int(os.getenv("AI_DAILY_LIMIT", "100"))
 if MAX_AI_REQUESTS_PER_DAY < 1:
     raise ValueError("AI_DAILY_LIMIT must be a positive integer.")
@@ -397,7 +399,7 @@ def chat(request: ChatRequest):
 
 
 @app.post("/ai-tutor", response_model=AITutorResponse)
-def ai_tutor(request: AITutorRequest):
+async def ai_tutor(request: AITutorRequest):
     topics = load_knowledge().get("topics", [])
     learner_context = _build_learner_context(request, topics)
     system_instruction = (
@@ -420,11 +422,22 @@ def ai_tutor(request: AITutorRequest):
         },
         ensure_ascii=False,
     )
-    answer, remaining_requests = _generate_gemini_text(
-        prompt,
-        system_instruction,
-        max_output_tokens=900,
-    )
+    try:
+        answer, remaining_requests = await asyncio.wait_for(
+            asyncio.to_thread(
+                _generate_gemini_text,
+                prompt,
+                system_instruction,
+                max_output_tokens=900,
+            ),
+            timeout=AI_TUTOR_TIMEOUT_SECONDS,
+        )
+    except TimeoutError as error:
+        logger.warning("AI tutor request exceeded the 50-second server deadline.")
+        raise HTTPException(
+            status_code=503,
+            detail="The AI tutor is taking too long to respond. Please try again shortly.",
+        ) from error
 
     return AITutorResponse(
         response=answer,
