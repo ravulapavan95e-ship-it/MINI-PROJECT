@@ -14,10 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
-from google.genai._gaos.lib.compat_errors import (
-    APIStatusError as GeminiAPIStatusError,
-    APITimeoutError as GeminiAPITimeoutError,
-)
+from google.genai._gaos.lib.compat_errors import APITimeoutError as GeminiAPITimeoutError
 from google.genai.errors import APIError
 from httpx import HTTPError, TimeoutException as HTTPTimeoutError
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -275,6 +272,46 @@ def _build_learner_context(
     }
 
 
+def _raise_gemini_http_error(error: Exception) -> None:
+    if isinstance(error, (GeminiAPITimeoutError, HTTPTimeoutError, TimeoutError)):
+        logger.warning("Gemini API request timed out (%s).", type(error).__name__)
+        raise HTTPException(
+            status_code=504,
+            detail="The AI service is taking too long to respond. Please try again shortly.",
+        ) from error
+
+    if isinstance(error, APIError):
+        status_code = getattr(error, "status_code", None) or getattr(error, "code", None)
+        logger.warning(
+            "Gemini API request failed (%s) with status %s.",
+            type(error).__name__,
+            status_code,
+        )
+        if status_code in (429, 500, 502, 503, 504):
+            raise HTTPException(
+                status_code=503,
+                detail="The AI service is temporarily busy. Please try again shortly.",
+            ) from error
+        if status_code in (400, 401, 403):
+            raise HTTPException(
+                status_code=502,
+                detail="AI learning features are temporarily unavailable.",
+            ) from error
+        raise HTTPException(
+            status_code=502,
+            detail="AI learning could not complete the request. Please try again.",
+        ) from error
+
+    if isinstance(error, HTTPError):
+        logger.warning("Gemini request failed because of a network error.")
+        raise HTTPException(
+            status_code=503,
+            detail="AI learning could not reach the service. Please try again shortly.",
+        ) from error
+
+    raise error
+
+
 def _generate_gemini_text(
     prompt: str,
     system_instruction: str,
@@ -309,39 +346,61 @@ def _generate_gemini_text(
                     "thinking_level": "low",
                 },
             )
-    except (GeminiAPITimeoutError, HTTPTimeoutError) as error:
-        logger.warning("Gemini API request timed out (%s).", type(error).__name__)
-        raise HTTPException(
-            status_code=504,
-            detail="The AI service is taking too long to respond. Please try again shortly.",
-        ) from error
-    except (APIError, GeminiAPIStatusError) as error:
-        status_code = getattr(error, "status_code", None) or getattr(error, "code", None)
-        logger.warning(
-            "Gemini API request failed (%s) with status %s.",
-            type(error).__name__,
-            status_code,
-        )
-        if status_code in (429, 500, 502, 503, 504):
-            raise HTTPException(
-                status_code=503,
-                detail="The AI service is temporarily busy. Please try again shortly.",
-            ) from error
-        if status_code in (400, 401, 403):
-            raise HTTPException(
-                status_code=502,
-                detail="AI learning features are temporarily unavailable.",
-            ) from error
+    except (GeminiAPITimeoutError, APIError, HTTPError, TimeoutError) as error:
+        _raise_gemini_http_error(error)
+
+    answer = (interaction.output_text or "").strip()
+    if not answer:
+        logger.warning("Gemini returned an empty AI response.")
         raise HTTPException(
             status_code=502,
-            detail="AI learning could not complete the request. Please try again.",
-        ) from error
-    except HTTPError as error:
-        logger.warning("Gemini request failed because of a network error.")
+            detail="AI learning returned an empty response. Please try again.",
+        )
+    return answer, remaining_requests
+
+
+async def _generate_gemini_text_async(
+    prompt: str,
+    system_instruction: str,
+    max_output_tokens: int = 800,
+    request_timeout_seconds: float = 40,
+) -> tuple[str, int]:
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        logger.error("AI request rejected because GEMINI_API_KEY is not configured.")
         raise HTTPException(
             status_code=503,
-            detail="AI learning could not reach the service. Please try again shortly.",
-        ) from error
+            detail="AI learning features are not configured yet. Please try again later.",
+        )
+
+    remaining_requests = _reserve_ai_request()
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(
+            timeout=60_000,
+            retry_options=types.HttpRetryOptions(attempts=1),
+        ),
+    )
+    try:
+        async with client.aio as async_client:
+            interaction = await asyncio.wait_for(
+                async_client.interactions.create(
+                    model=GEMINI_MODEL,
+                    input=prompt,
+                    system_instruction=system_instruction,
+                    timeout=request_timeout_seconds,
+                    generation_config={
+                        "temperature": 0.4,
+                        "max_output_tokens": max_output_tokens,
+                        "thinking_level": "low",
+                    },
+                ),
+                timeout=request_timeout_seconds,
+            )
+    except (GeminiAPITimeoutError, APIError, HTTPError, TimeoutError) as error:
+        _raise_gemini_http_error(error)
+    finally:
+        client.close()
 
     answer = (interaction.output_text or "").strip()
     if not answer:
@@ -432,8 +491,7 @@ async def ai_tutor(request: AITutorRequest):
     )
     try:
         answer, remaining_requests = await asyncio.wait_for(
-            asyncio.to_thread(
-                _generate_gemini_text,
+            _generate_gemini_text_async(
                 prompt,
                 system_instruction,
                 max_output_tokens=900,
