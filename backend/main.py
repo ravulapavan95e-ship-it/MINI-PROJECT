@@ -1,13 +1,19 @@
 from pathlib import Path
 from typing import List
+import os
 
 import json
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from chatbot import find_best_topic
+
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 
 
 app = FastAPI(
@@ -21,13 +27,20 @@ app = FastAPI(
 # CORS
 # -----------------------------
 
+configured_origins = os.getenv("CORS_ORIGINS", "")
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    *(
+        origin.strip()
+        for origin in configured_origins.split(",")
+        if origin.strip()
+    ),
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://mini-project-1-sexl.onrender.com",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,7 +50,6 @@ app.add_middleware(
 # Knowledge Base
 # -----------------------------
 
-BASE_DIR = Path(__file__).resolve().parent
 KNOWLEDGE_FILE = BASE_DIR / "knowledge" / "python.json"
 
 
@@ -78,6 +90,10 @@ class QuizRequest(BaseModel):
 
 @app.get("/")
 def home():
+    frontend_index = FRONTEND_DIST / "index.html"
+    if frontend_index.is_file():
+        return FileResponse(frontend_index)
+
     return {
         "message": "Personalized Learning Assistant API is running"
     }
@@ -394,3 +410,11 @@ def submit_quiz(request: QuizRequest):
         "message": "Not quite. Review this topic and try again.",
         "recommendation": "review"
     }
+
+
+if FRONTEND_DIST.is_dir():
+    app.mount(
+        "/",
+        StaticFiles(directory=FRONTEND_DIST, html=True),
+        name="frontend",
+    )
