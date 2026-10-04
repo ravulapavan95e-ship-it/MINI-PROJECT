@@ -715,6 +715,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
           question: learnerQuestion,
           ...getLearnerContext(),
         }),
+        signal: AbortSignal.timeout(65_000),
       });
       const data = await readApiResponse(response);
 
@@ -744,7 +745,9 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
       });
     } catch (error) {
       setAiTutorError(
-        error instanceof Error
+        error instanceof Error && error.name === "TimeoutError"
+          ? "The AI Learning Tutor timed out. Please try again shortly."
+          : error instanceof Error
           ? error.message
           : "Could not reach the AI Learning Tutor. Please try again.",
       );
