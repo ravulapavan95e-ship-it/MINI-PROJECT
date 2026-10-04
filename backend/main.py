@@ -278,6 +278,7 @@ def _generate_gemini_text(
     prompt: str,
     system_instruction: str,
     max_output_tokens: int = 800,
+    response_mime_type: Optional[str] = None,
 ) -> tuple[str, int]:
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -297,6 +298,11 @@ def _generate_gemini_text(
                 generation_config={
                     "temperature": 0.4,
                     "max_output_tokens": max_output_tokens,
+                    **(
+                        {"response_mime_type": response_mime_type}
+                        if response_mime_type
+                        else {}
+                    ),
                 },
             )
     except (APIError, GeminiAPIStatusError) as error:
@@ -850,6 +856,7 @@ def ai_recommendation(request: AIRecommendationRequest):
         prompt,
         system_instruction,
         max_output_tokens=500,
+        response_mime_type="application/json",
     )
     try:
         details = AIRecommendationDetails.model_validate(json.loads(answer))
