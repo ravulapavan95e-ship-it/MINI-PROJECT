@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       "/chat": "http://127.0.0.1:8000",
       "/health": "http://127.0.0.1:8000",
+      "/ai-tutor": "http://127.0.0.1:8000",
       "/learning-path": "http://127.0.0.1:8000",
       "/quiz": "http://127.0.0.1:8000",
       "/topics": "http://127.0.0.1:8000",

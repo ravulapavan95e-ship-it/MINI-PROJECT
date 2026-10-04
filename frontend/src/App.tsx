@@ -72,7 +72,11 @@ interface ChatResponse {
 
 }
 
-
+interface AITutorResponse {
+  response: string;
+  remaining_requests: number;
+  daily_limit: number;
+}
 
 interface QuizResponse {
 
@@ -141,6 +145,12 @@ function App() {
 
 
   const [loadingChat, setLoadingChat] = useState(false);
+
+const [aiTutorQuestion, setAiTutorQuestion] = useState("");
+const [aiTutorAnswer, setAiTutorAnswer] =
+  useState<AITutorResponse | null>(null);
+const [aiTutorError, setAiTutorError] = useState("");
+const [loadingAiTutor, setLoadingAiTutor] = useState(false);
 
 
 
@@ -518,12 +528,81 @@ function App() {
       setLoadingChat(false);
 
     }
-
   };
 
+  const askAiTutor = async () => {
+    const learnerQuestion = aiTutorQuestion.trim();
+    if (!learnerQuestion) {
+      setAiTutorError("Please enter a question for the AI Learning Tutor.");
+      setAiTutorAnswer(null);
+      return;
+    }
+
+    const currentTopic =
+      currentTopicIndex >= 0
+        ? learningPath?.roadmap[currentTopicIndex]
+        : undefined;
+    const recentQuizScore =
+      (currentTopic && quizScores[currentTopic.topic_id]) ??
+      Object.values(quizScores).slice(-1)[0] ??
+      null;
+
+    setLoadingAiTutor(true);
+    setAiTutorError("");
+    setAiTutorAnswer(null);
+
+    try {
+      const response = await fetch(`${API_URL}/ai-tutor`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: learnerQuestion,
+          skill_level: learningPath?.current_level ?? level,
+          current_topic: currentTopic?.topic ?? null,
+          learning_goal: learningPath?.goal ?? goal,
+          completed_topics: completedTopics,
+          recent_quiz_score: recentQuizScore,
+          topics_to_review: reviewedTopics.map((topic) => topic.topic),
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.detail === "string"
+            ? data.detail
+            : "The AI Learning Tutor could not answer. Please try again.",
+        );
+      }
+
+      if (
+        typeof data.response !== "string" ||
+        typeof data.remaining_requests !== "number" ||
+        typeof data.daily_limit !== "number"
+      ) {
+        throw new Error("The AI Learning Tutor returned an invalid response.");
+      }
+
+      setAiTutorAnswer({
+        response: data.response,
+        remaining_requests: data.remaining_requests,
+        daily_limit: data.daily_limit,
+      });
+    } catch (error) {
+      setAiTutorError(
+        error instanceof Error
+          ? error.message
+          : "Could not reach the AI Learning Tutor. Please try again.",
+      );
+    } finally {
+      setLoadingAiTutor(false);
+    }
+  };
 
 
-  // --------------------------------
+  // --------------------------------
 
   // Adaptive Recommendation
 
@@ -1153,7 +1232,7 @@ function App() {
           <div className="brand-mark" aria-hidden="true">✦</div>
           <div className="brand-copy">
             <div className="eyebrow">PERSONALIZED LEARNING WORKSPACE</div>
-            <h1>Personalized Learning Assistant</h1>
+            <h1>AI-Powered Personalized Learning Assistant</h1>
             <p>
               A focused space to build skills, practice concepts, and track your progress.
             </p>
@@ -2828,9 +2907,69 @@ Learning Assistant
 
         </section>
 
+        <section className="card ai-tutor-card" aria-labelledby="ai-tutor-heading">
+          <div className="ai-tutor-heading">
+            <span className="ai-tutor-orb" aria-hidden="true">✦</span>
+            <div>
+              <span className="eyebrow">PERSONALIZED, CONVERSATIONAL SUPPORT</span>
+              <h2 id="ai-tutor-heading">AI Learning Tutor</h2>
+            </div>
+          </div>
+          <p className="ai-tutor-intro">
+            Ask for an explanation, example, or study guidance. The tutor uses
+            your learning level, goal, topic progress, and available quiz results
+            to tailor its response.
+          </p>
+          <form
+            className="ai-tutor-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void askAiTutor();
+            }}
+          >
+            <label htmlFor="ai-tutor-question">Your question</label>
+            <textarea
+              id="ai-tutor-question"
+              rows={3}
+              maxLength={2000}
+              placeholder="For example: Explain Python loops like I am a beginner."
+              value={aiTutorQuestion}
+              onChange={(event) => setAiTutorQuestion(event.target.value)}
+              disabled={loadingAiTutor}
+            />
+            <div className="ai-tutor-actions">
+              <span>Personalized using your current learning progress</span>
+              <button type="submit" disabled={loadingAiTutor}>
+                {loadingAiTutor ? "Preparing your explanation..." : "Ask AI Tutor"}
+              </button>
+            </div>
+          </form>
+          {loadingAiTutor && (
+            <p className="ai-tutor-status" role="status">
+              The AI tutor is preparing a personalized response…
+            </p>
+          )}
+          {aiTutorError && (
+            <p className="ai-tutor-error" role="alert">
+              {aiTutorError}
+            </p>
+          )}
+          {aiTutorAnswer && (
+            <div className="ai-tutor-response" aria-live="polite">
+              <div className="ai-tutor-response-header">
+                <strong>Your learning response</strong>
+                <span>
+                  {aiTutorAnswer.remaining_requests} of{" "}
+                  {aiTutorAnswer.daily_limit} AI requests remaining today
+                </span>
+              </div>
+              <p>{aiTutorAnswer.response}</p>
+            </div>
+          )}
+        </section>
 
 
-      </main>
+      </main>
 
 
 

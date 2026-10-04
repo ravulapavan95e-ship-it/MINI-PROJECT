@@ -1,85 +1,64 @@
-# Personalized Learning Assistant
+# AI-Powered Personalized Learning Assistant
+
+## Project Links
+
+- **Live application:** https://personalized-learning-assistant-v8hc.onrender.com
+- **GitHub repository:** https://github.com/ravulapavan95e-ship-it/MINI-PROJECT
 
 ## 1. Project Overview
 
-The **Personalized Learning Assistant** is a web application designed to help learners study Python through personalized learning paths, topic-based practice, quizzes, and progress tracking.
+The AI-Powered Personalized Learning Assistant is a Python-learning web
+application that combines rule-based learning paths and quizzes with two
+learning-support options: a local keyword-based assistant and an AI Learning
+Tutor. Learners can request an ordered roadmap based on their learning goal,
+skill level, available study time, completed topics, and topic prerequisites.
 
-The system allows learners to provide their learning goal, current skill level, available study time, and completed topics. Based on these inputs, the application generates an ordered learning roadmap using topic levels and prerequisite relationships from a local Python knowledge base.
+The Gemini-powered tutor provides natural-language explanations and study
+guidance tailored to the learner context available in the application. Existing
+roadmap generation, knowledge-base assistance, quizzes, and browser-based
+progress tracking remain available.
 
-The project combines a React-based user interface with a FastAPI backend to provide an interactive and structured learning experience.
+## 2. Objectives
 
-## 2. Live Demo
+- Generate an ordered Python learning roadmap based on a learner's goal and
+  current skill level.
+- Estimate study duration using the learner's available daily study time.
+- Sequence roadmap topics using prerequisite information in the local
+  knowledge base.
+- Offer both keyword-based learning assistance and personalized AI tutoring.
+- Provide topic quizzes, scores, and recommendations to review or continue.
+- Track completed topics and quiz scores in the browser.
 
-**Live Application:**  
-https://personalized-learning-assistant-v8hc.onrender.com
+## 3. Key Features
 
-## 3. Objectives
+- **Personalized learning paths:** Uses the learning goal, skill level, study
+  time, and completed topics to generate a roadmap.
+- **Prerequisite-based sequencing:** Uses topic-level and prerequisite
+  information from the local Python knowledge base.
+- **Learning Assistant:** Matches questions to knowledge-base keywords and
+  returns a topic explanation, practice question, answer, and match score.
+- **AI Learning Tutor:** Uses the Google Gemini API to provide a natural
+  language explanation, example, common mistake, practice question, hint, and
+  suggested next topic. The tutor can use the available skill level, learning
+  goal, current topic, completed topics, quiz score, and review topics as
+  learning context.
+- **Topic quizzes:** Checks submitted answers and provides a score, feedback,
+  the correct answer when applicable, and an adaptive recommendation.
+- **Progress tracking:** Allows learners to mark topics complete and saves
+  completed topics and quiz scores in browser `localStorage`.
+- **Learning analytics:** Displays roadmap progress, completed topics, quiz
+  attempts, average quiz score, topics for review, and a recommendation.
+- **Daily AI usage limit:** Limits AI Tutor requests using the server-side
+  `AI_DAILY_LIMIT` setting, which defaults to 100 requests per UTC day.
 
-- Generate an ordered Python learning roadmap based on the learner's goal and skill level.
-- Consider the learner's available study time when estimating the roadmap duration.
-- Provide topic explanations and practice questions from the local knowledge base.
-- Support topic-based questions through the learning assistant.
-- Provide quiz feedback and recommendations.
-- Track completed topics and quiz scores.
-- Provide learners with a simple and interactive learning interface.
-
-## 4. Key Features
-
-### Personalized Learning Paths
-
-Generates a learning roadmap based on:
-
-- Learning goal
-- Skill level
-- Available study time
-- Previously completed topics
-
-### Topic Sequencing
-
-Uses topic levels and prerequisite relationships from the Python knowledge base to arrange topics in a logical learning order.
-
-### Learning Assistant
-
-Matches learner questions with relevant topics in the knowledge base and provides:
-
-- Topic explanations
-- Practice questions
-- Answers
-- Match information
-
-### Topic Quizzes
-
-Allows learners to:
-
-- Attempt topic-based questions
-- Submit answers
-- Receive immediate feedback
-- View scores
-- Get recommendations for further learning
-
-### Progress Tracking
-
-Completed topics and quiz scores are stored in the browser using `localStorage`.
-
-### Learning Analytics
-
-Provides learning information such as:
-
-- Roadmap progress
-- Completed topics
-- Quiz attempts
-- Average quiz score
-- Topics that may require additional review
-
-## 5. Technology Stack
+## 4. Technology Stack
 
 ### Frontend
 
 - React
 - TypeScript
 - Vite
-- HTML
-- CSS
+- HTML and CSS
 
 ### Backend
 
@@ -88,53 +67,175 @@ Provides learning information such as:
 - Pydantic
 - Uvicorn
 
-### Learning and Recommendation Logic
+### AI/Logic
 
-- Rule-based roadmap generation
-- Prerequisite-based topic sequencing
-- Keyword matching for learning assistant responses
-- Normalized quiz answer comparison
-- Local Python knowledge base
+- Google Gemini API through Google's official `google-genai` Python SDK
+- Gemini `gemini-3.8-flash` model for AI tutoring
+- Rule-based roadmap selection and prerequisite ordering
+- Keyword matching against the local Python knowledge base for the existing
+  assistant
+- Normalized text comparison for quiz answers
+- Local JSON knowledge base at `backend/knowledge/python.json`
 
-### Deployment
+### Build/Deployment
 
-- Render
-- Render Blueprint
-- `render.yaml`
+- npm and Vite for frontend development and production builds
+- Render web service configured by `render.yaml`
 
-## 6. System Architecture
+## 5. System Architecture
 
 ```text
-                    ┌──────────────────────┐
-                    │        User          │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │ React + TypeScript   │
-                    │       Frontend       │
-                    │        (Vite)        │
-                    └──────────┬───────────┘
-                               │
-                           HTTP / JSON
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │      FastAPI         │
-                    │       Backend        │
-                    └──────────┬───────────┘
-                               │
-                ┌──────────────┴──────────────┐
-                │                             │
-                ▼                             ▼
-       ┌──────────────────┐         ┌──────────────────┐
-       │ Learning Path &  │         │ Learning Assistant│
-       │ Quiz Logic       │         │ Keyword Matching │
-       └────────┬─────────┘         └────────┬─────────┘
-                │                            │
-                └─────────────┬──────────────┘
-                              ▼
-                  ┌────────────────────────┐
-                  │ Python Knowledge Base  │
-                  │      python.json       │
-                  └────────────────────────┘
+                           User
+                            │
+                            ▼
+                  React + TypeScript
+                     (Vite frontend)
+                            │
+                        HTTP / JSON
+                            │
+                            ▼
+                       FastAPI
+                  ┌─────────┴──────────┐
+                  │                    │
+                  ▼                    ▼
+       Roadmap, prerequisite,     AI Learning Tutor
+        and quiz logic                 │
+                  │                    ▼
+                  │               Gemini API
+                  │                    │
+                  └─────────┬──────────┘
+                            ▼
+              Personalized learning response
+                            ▲
+                            │
+              Local Python knowledge base
+```
+
+The browser sends learning requests to FastAPI. Rule-based roadmap, chat, and
+quiz operations use the backend and local knowledge base. The AI Tutor sends
+its request and relevant learning context from FastAPI to Gemini; the Gemini
+API key is kept on the server and is not sent to the frontend.
+
+## 6. Application Workflow
+
+1. The learner enters a goal, skill level, and daily study time.
+2. The frontend sends the learning details and completed-topic IDs to
+   `POST /learning-path`.
+3. FastAPI selects topics from the local knowledge base, orders prerequisites,
+   estimates the study duration, and returns the roadmap.
+4. The learner can use the existing Learning Assistant, submit topic answers
+   to quizzes, and mark topics as complete.
+5. For AI assistance, the learner submits a question to `POST /ai-tutor`. The
+   frontend includes available learning context, such as skill level, current
+   topic, completed topics, recent quiz score, and topics to review.
+6. FastAPI applies the daily usage limit and sends the question and context to
+   Gemini. It returns the tutor response and remaining daily requests to the
+   frontend.
+7. The application updates its progress and analytics from the learner's
+   completed topics and quiz scores.
+
+## 7. Project Structure
+
+```text
+personalized-learning-assistant/
+├── backend/
+│   ├── main.py
+│   ├── chatbot.py
+│   ├── requirements.txt
+│   └── knowledge/
+│       └── python.json
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── App.css
+│   │   ├── index.css
+│   │   └── main.tsx
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.ts
+├── render.yaml
+└── README.md
+```
+
+## 8. Installation and Local Setup
+
+### Prerequisites
+
+- Python and pip
+- Node.js and npm
+- A Gemini API key to use the AI Learning Tutor
+
+### Configure the backend environment
+
+Set `GEMINI_API_KEY` in the backend process environment. Do not put the key in
+frontend settings, source files, or the repository. Optionally set
+`AI_DAILY_LIMIT`; its default is `100`.
+
+For example, in PowerShell, set the variables in the terminal before starting
+the backend:
+
+```powershell
+$env:GEMINI_API_KEY = "<your Gemini API key>"
+$env:AI_DAILY_LIMIT = "100"
+```
+
+### Start the backend
+
+From a terminal at the repository root:
+
+```bash
+cd backend
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --reload --port 8000
+```
+
+FastAPI's interactive API documentation is available at
+`http://127.0.0.1:8000/docs`.
+
+### Start the frontend
+
+Open a second terminal at the repository root:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite, usually `http://localhost:5173`. Vite
+proxies API requests to the local FastAPI server on port `8000`.
+
+### Build the frontend
+
+```bash
+cd frontend
+npm run build
+```
+
+## 9. API Endpoints
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | Serves the frontend when a production build is available; otherwise returns an API status message. |
+| `GET` | `/health` | Returns the backend health status. |
+| `GET` | `/topics` | Returns the subject and available knowledge-base topics. |
+| `POST` | `/chat` | Matches a question to the local knowledge base. |
+| `POST` | `/learning-path` | Generates a personalized roadmap. |
+| `POST` | `/quiz` | Checks a topic answer and returns feedback. |
+| `POST` | `/ai-tutor` | Returns a Gemini-powered response using the supplied learner context. |
+
+## 10. Configuration and Usage Limit
+
+| Environment variable | Purpose | Default |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Server-side credential used by FastAPI to access Gemini. | Not set |
+| `AI_DAILY_LIMIT` | Maximum AI Tutor requests allowed per day by the running backend process. | `100` |
+
+Set both variables in the Render service's environment settings for the
+deployed AI Tutor. The API key is a secret: enter it as a server environment
+variable and never commit it to GitHub or place it in a `VITE_` variable.
+
+The daily request counter is held in memory and uses the UTC calendar day. It
+is shared between requests handled by the same running process, but resets
+when that process restarts. It is not a persistent cross-instance counter.

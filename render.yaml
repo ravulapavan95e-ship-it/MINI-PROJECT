@@ -11,3 +11,7 @@ services:
         value: 3.13.5
       - key: CORS_ORIGINS
         value: https://mini-project-1-sexl.onrender.com
+      - key: AI_DAILY_LIMIT
+        value: "100"
+      - key: GEMINI_API_KEY
+        sync: false
