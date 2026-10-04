@@ -867,8 +867,27 @@ def ai_recommendation(request: AIRecommendationRequest):
     )
     try:
         details = AIRecommendationDetails.model_validate(json.loads(answer))
-    except (json.JSONDecodeError, ValidationError) as error:
-        logger.warning("Gemini returned an invalid AI recommendation response.")
+    except json.JSONDecodeError as error:
+        logger.warning(
+            "Gemini returned invalid recommendation JSON at line %s, column %s.",
+            error.lineno,
+            error.colno,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="AI study recommendation could not be formatted. Please try again.",
+        ) from error
+    except ValidationError as error:
+        invalid_fields = sorted(
+            {
+                ".".join(str(part) for part in issue["loc"])
+                for issue in error.errors(include_input=False)
+            }
+        )
+        logger.warning(
+            "Gemini recommendation did not match the response schema: %s.",
+            ", ".join(invalid_fields),
+        )
         raise HTTPException(
             status_code=502,
             detail="AI study recommendation could not be formatted. Please try again.",
