@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
+from google.genai import types
 from google.genai._gaos.lib.compat_errors import (
     APIStatusError as GeminiAPIStatusError,
     APITimeoutError as GeminiAPITimeoutError,
@@ -286,7 +287,13 @@ def _generate_gemini_text(
 
     remaining_requests = _reserve_ai_request()
     try:
-        with genai.Client(api_key=api_key) as client:
+        with genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(
+                timeout=60_000,
+                retry_options=types.HttpRetryOptions(attempts=1),
+            ),
+        ) as client:
             interaction = client.interactions.create(
                 model=GEMINI_MODEL,
                 input=prompt,
@@ -295,7 +302,6 @@ def _generate_gemini_text(
                     "temperature": 0.4,
                     "max_output_tokens": max_output_tokens,
                 },
-                timeout=60,
             )
     except GeminiAPITimeoutError as error:
         logger.warning("Gemini API request exceeded the 60-second timeout.")
