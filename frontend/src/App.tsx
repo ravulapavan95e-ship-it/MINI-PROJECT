@@ -1778,9 +1778,9 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
           <div className="brand-mark" aria-hidden="true">✦</div>
           <div className="brand-copy">
             <div className="eyebrow">PERSONALIZED LEARNING WORKSPACE</div>
-            <h1>AI-Powered Personalized Learning Assistant</h1>
+            <h1>AI-Assisted Personalized Learning Assistant</h1>
             <p>
-              A focused space to build skills, practice concepts, and track your progress.
+              Core learning tools work independently, with optional AI support when you ask.
             </p>
           </div>
           <div className="system-pill">
@@ -1900,6 +1900,8 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
       </section>
 
       <main className="container">
+
+        <p className="eyebrow">CORE LEARNING FEATURES</p>
 
         {workflowError && (
           <p className="workflow-error" role="alert">
@@ -2593,6 +2595,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
                     <strong>{learningPath.minutes_per_day} min/day</strong>
                   </div>
                 </div>
+                <p className="eyebrow">OPTIONAL AI ASSISTANCE</p>
                 <div className="learner-status-actions">
                   <button
                     type="button"
@@ -3184,7 +3187,7 @@ className={
                                   >
                                     {loadingAiQuizExplanation[item.topic_id]
                                       ? "Preparing explanation..."
-                                      : "Explain this answer"}
+                                      : "Get AI Explanation"}
                                   </button>
                                   {aiQuizExplanationErrors[item.topic_id] && (
                                     <p className="ai-tutor-error" role="alert">
@@ -3653,7 +3656,7 @@ Learning Assistant
           <div className="ai-tutor-heading">
             <span className="ai-tutor-orb" aria-hidden="true">✦</span>
             <div>
-              <span className="eyebrow">PERSONALIZED, CONVERSATIONAL SUPPORT</span>
+              <span className="eyebrow">OPTIONAL AI ASSISTANCE · PERSONALIZED SUPPORT</span>
               <h2 id="ai-tutor-heading">AI Learning Tutor</h2>
             </div>
           </div>
