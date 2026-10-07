@@ -1,249 +1,249 @@
-# AI-Powered Personalized Learning Assistant
+# Personalized Learning Assistant
 
-## Project Links
+An AI-assisted Python learning application built incrementally on the existing
+React + TypeScript + Vite frontend and FastAPI backend. Learners can generate a
+roadmap, practice topics, ask the AI tutor questions, save progress in SQLite,
+and download their roadmap as a PDF.
 
-- **Live application:** https://personalized-learning-assistant-v8hc.onrender.com
-- **GitHub repository:** https://github.com/ravulapavan95e-ship-it/MINI-PROJECT
+## 1. Project overview
 
-## 1. Project Overview
+The application creates a learning roadmap from a learner's name, goal, skill
+level, and available study time. Curated Python topics and prerequisite order
+provide safe boundaries for Gemini's personalized descriptions and practice
+recommendations. Topic completion and quiz outcomes are stored in SQLite.
 
-The AI-Powered Personalized Learning Assistant is a Python-learning web
-application that combines rule-based learning paths and quizzes with two
-learning-support options: a local keyword-based assistant and an AI Learning
-Tutor. Learners can request an ordered roadmap based on their learning goal,
-skill level, available study time, completed topics, and topic prerequisites.
+Existing features remain available: the local keyword-based Learning
+Assistant, rule-based legacy roadmap endpoint, quizzes, analytics, Gemini
+study recommendations, quiz explanations, and the AI Learning Tutor.
 
-The Gemini-powered tutor provides natural-language explanations and study
-guidance tailored to the learner context available in the application. Existing
-roadmap generation, knowledge-base assistance, quizzes, and browser-based
-progress tracking remain available.
-
-## 2. Objectives
-
-- Generate an ordered Python learning roadmap based on a learner's goal and
-  current skill level.
-- Estimate study duration using the learner's available daily study time.
-- Sequence roadmap topics using prerequisite information in the local
-  knowledge base.
-- Offer both keyword-based learning assistance and personalized AI tutoring.
-- Provide topic quizzes, scores, and recommendations to review or continue.
-- Track completed topics and quiz scores in the browser.
-
-## 3. Key Features
-
-- **Personalized learning paths:** Uses the learning goal, skill level, study
-  time, and completed topics to generate a roadmap.
-- **Prerequisite-based sequencing:** Uses topic-level and prerequisite
-  information from the local Python knowledge base.
-- **Learning Assistant:** Matches questions to knowledge-base keywords and
-  returns a topic explanation, practice question, answer, and match score.
-- **AI Learning Tutor:** Uses the Google Gemini API to provide a natural
-  language explanation, example, common mistake, practice question, hint, and
-  suggested next topic, adapted to the learner's level and available progress
-  context.
-- **AI Study Recommendation:** Combines quiz scores and weak topics with
-  prerequisite-checked roadmap order to suggest whether to review or continue,
-  a study duration, and practice activities.
-- **AI quiz explanation:** After an incorrect answer, explains the tested
-  concept, the expected answer, and a short practice prompt.
-- **Topic quizzes:** Checks submitted answers and provides a score, feedback,
-  the correct answer when applicable, and an adaptive recommendation.
-- **Progress tracking:** Allows learners to mark topics complete and saves
-  completed topics and quiz scores in browser `localStorage`.
-- **Learning analytics:** Displays roadmap progress, completed topics, quiz
-  attempts, average quiz score, topics for review, and a recommendation.
-- **Daily AI usage limit:** Applies the server-side `AI_DAILY_LIMIT` setting
-  across Gemini-powered features; it defaults to 100 requests per UTC day.
-
-## 4. Technology Stack
-
-### Frontend
-
-- React
-- TypeScript
-- Vite
-- HTML and CSS
-
-### Backend
-
-- Python
-- FastAPI
-- Pydantic
-- Uvicorn
-
-### AI/Logic
-
-- Google Gemini API through Google's official `google-genai` Python SDK
-- Gemini `gemini-3.8-flash` model for AI tutoring
-- Rule-based roadmap selection and prerequisite ordering
-- Keyword matching against the local Python knowledge base for the existing
-  assistant
-- Normalized text comparison for quiz answers
-- Local JSON knowledge base at `backend/knowledge/python.json`
-
-### Build/Deployment
-
-- npm and Vite for frontend development and production builds
-- Render web service configured by `render.yaml`
-
-## 5. System Architecture
+## 2. System architecture
 
 ```text
-                           User
-                            │
-                            ▼
-                  React + TypeScript
-                     (Vite frontend)
-                            │
-                        HTTP / JSON
-                            │
-                            ▼
-                       FastAPI
-                  ┌─────────┴──────────┐
-                  │                    │
-                  ▼                    ▼
-       Roadmap, prerequisite,     AI Learning Tutor
-        and quiz logic                 │
-                  │                    ▼
-                  │               Gemini API
-                  │                    │
-                  └─────────┬──────────┘
-                            ▼
-              Personalized learning response
-                            ▲
-                            │
-              Local Python knowledge base
+┌──────────────────────────────────┐
+│ Presentation Layer               │
+│ React + TypeScript + Vite        │
+│ Input · Roadmap · Quiz · Progress│
+└────────────────┬─────────────────┘
+                 │ REST / JSON + PDF
+                 ▼
+┌──────────────────────────────────┐
+│ Application Layer                │──────────► Gemini AI Service
+│ FastAPI · Pydantic · Business    │             Roadmaps · tutoring
+│ logic · API · PDF generation     │             recommendations
+└────────────────┬─────────────────┘
+                 │ SQL
+                 ▼
+┌──────────────────────────────────┐
+│ Data Layer                       │
+│ SQLite: backend/data/            │
+│ learning_assistant.db            │
+└──────────────────────────────────┘
 ```
 
-The browser sends learning requests to FastAPI. Rule-based roadmap, chat, and
-quiz operations use the backend and local knowledge base. The AI Tutor sends
-its request and relevant learning context from FastAPI to Gemini; the Gemini
-API key is kept on the server and is not sent to the frontend.
+This is a simple three-tier web application:
 
-## 6. Application Workflow
+1. **Presentation Layer:** the existing React interface collects preferences,
+   displays roadmaps and progress, runs practice quizzes, and downloads files.
+2. **Application Layer:** FastAPI validates requests, applies learning and quiz
+   logic, calls Gemini, reads/writes SQLite, and creates PDFs.
+3. **Data Layer:** SQLite stores learner profiles, generated roadmaps, topics,
+   completion status, and quiz results.
 
-1. The learner enters a goal, skill level, and daily study time.
-2. The frontend sends the learning details and completed-topic IDs to
-   `POST /learning-path`.
-3. FastAPI selects topics from the local knowledge base, orders prerequisites,
-   estimates the study duration, and returns the roadmap.
-4. The learner can use the existing Learning Assistant, submit topic answers
-   to quizzes, and mark topics as complete.
-5. For AI assistance, the learner submits a question to `POST /ai-tutor`. The
-   frontend includes concise learner context, such as skill level, available
-   study time, roadmap position, quiz scores, and weak topics.
-6. After a quiz, the learner can request an AI Study Recommendation or ask for
-   an explanation of an incorrect answer. FastAPI validates the quiz topic and
-   uses prerequisite-aware roadmap order to choose a valid next topic.
-7. FastAPI applies the daily usage limit to each Gemini request and returns
-   personalized explanations or study guidance to the frontend.
-8. The application updates its progress and analytics from the learner's
-   completed topics and quiz scores.
+Gemini is the AI service integrated with the Application Layer; it is not a
+database or a separate application tier. The API key stays on the backend.
 
-## 7. Project Structure
+## 3. Main features
+
+- Personalized roadmap generation using Gemini, constrained to the existing
+  Python knowledge base and its prerequisite order.
+- Topic descriptions, study-time estimates, and practice questions tailored to
+  the learner's stated goal and level.
+- Topic completion and quiz-result persistence in SQLite.
+- Progress dashboard and learner-specific saved roadmap restoration.
+- Existing local keyword assistant and Gemini tutor, recommendation, and quiz
+  explanation features.
+- Downloadable PDF report containing learner preferences, ordered topics,
+  practice questions, progress, and generation date.
+- Existing static frontend and Render deployment configuration are retained.
+
+## 4. Project structure
 
 ```text
 personalized-learning-assistant/
 ├── backend/
-│   ├── main.py
-│   ├── chatbot.py
-│   ├── requirements.txt
-│   └── knowledge/
-│       └── python.json
+│   ├── main.py                 # FastAPI routes, validation, and AI integration
+│   ├── database.py             # SQLite connection and schema initialization
+│   ├── pdf_service.py          # Local PDF report generation
+│   ├── chatbot.py              # Existing local knowledge-base assistant
+│   ├── knowledge/python.json   # Curated topics, answers, and prerequisites
+│   ├── data/                   # Created automatically; local database ignored by Git
+│   └── requirements.txt
 ├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── App.css
-│   │   ├── index.css
-│   │   └── main.tsx
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.ts
+│   ├── src/App.tsx             # Existing React learning interface
+│   ├── src/App.css
+│   ├── src/index.css
+│   └── vite.config.ts          # Local proxy for FastAPI routes
 ├── render.yaml
 └── README.md
 ```
 
-## 8. Installation and Local Setup
+The backend is kept in its existing single FastAPI entry point; database and PDF
+responsibilities are separate small modules rather than duplicate router trees.
 
-### Prerequisites
+## 5. SQLite data model
 
-- Python and pip
-- Node.js and npm
-- A Gemini API key to use the AI Learning Tutor
+The database is created automatically when FastAPI starts for the first time.
+The file is `backend/data/learning_assistant.db`; no database server or manual
+schema setup is required.
 
-### Configure the backend environment
+| Table | Main columns |
+| --- | --- |
+| `learners` | `id`, `name`, `skill_level`, `learning_goal`, `study_time`, `created_at` |
+| `roadmaps` | `id`, `learner_id`, `title`, `description`, `roadmap_data`, `created_at` |
+| `topics` | `id`, `roadmap_id`, `knowledge_topic_id`, `title`, `description`, `practice_question`, `estimated_minutes`, `order_index`, `completed` |
+| `quiz_results` | `id`, `learner_id`, `topic`, `knowledge_topic_id`, `score`, `total_questions`, `created_at` |
 
-Set `GEMINI_API_KEY` in the backend process environment. Do not put the key in
-frontend settings, source files, or the repository. Optionally set
-`AI_DAILY_LIMIT`; its default is `100`.
+Roadmaps and quiz results reference learners; topics reference roadmaps. SQLite
+foreign-key enforcement is enabled for each connection. Generated local
+database files are excluded by `.gitignore`.
 
-For example, in PowerShell, set the variables in the terminal before starting
-the backend:
+## 6. AI integration
+
+FastAPI calls Gemini using the existing Google `google-genai` SDK. The backend
+uses the Gemini model already configured in `main.py`. AI-backed roadmap output
+is parsed and validated against known topic IDs and prerequisite order before it
+is saved. Existing AI tutor, recommendation, and incorrect-quiz-answer
+explanation routes are retained. The local keyword assistant does not require
+Gemini.
+
+Configure `GEMINI_API_KEY` as a backend environment variable. Never put the key
+in React code or a `VITE_` variable. Gemini-dependent routes return a clear
+service error if the key is missing or the provider fails.
+
+## 7. API endpoints
+
+### SQLite-backed API
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/learners` | Create a validated learner profile. |
+| `POST` | `/api/roadmap/generate` | Generate a Gemini-personalized roadmap and store it with its topics. |
+| `GET` | `/api/roadmap/{roadmap_id}` | Retrieve a saved roadmap, topics, and completion status. |
+| `GET` | `/api/roadmaps?learner_id={id}` | List saved roadmaps, optionally filtered by learner. |
+| `PATCH` | `/api/topics/{topic_id}/complete` | Persist a topic's completion state. |
+| `POST` | `/api/quiz/submit` | Evaluate and store one quiz result. |
+| `GET` | `/api/progress/{learner_id}` | Return completion and quiz progress for a learner. |
+| `POST` | `/api/progress/{learner_id}/reset` | Clear saved completions and quiz results after the learner confirms reset. |
+| `POST` | `/api/chat` | Return the existing contextual Gemini tutor response. |
+| `GET` | `/api/download/roadmap/{roadmap_id}` | Download a generated PDF report. |
+
+The existing frontend uses its existing `/learning-path` route with a learner
+name to create the learner and roadmap as one guided workflow. The standalone
+`/api/learners` and `/api/roadmap/generate` endpoints are also available for
+clients that want to make those two requests separately.
+
+### Existing endpoints retained
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | Serve the production frontend when built. |
+| `GET` | `/health` | Deployment health check. |
+| `GET` | `/topics` | Return the existing local knowledge base. |
+| `POST` | `/chat` | Existing keyword-based learning assistant. |
+| `POST` | `/learning-path` | Existing rule-based path for legacy requests without a learner name. |
+| `POST` | `/quiz` | Existing quiz endpoint for legacy clients. |
+| `POST` | `/ai-tutor` | Existing Gemini tutor endpoint. |
+| `POST` | `/ai-recommendation` | Gemini study recommendation. |
+| `POST` | `/ai-quiz-explanation` | Gemini explanation for an incorrect answer. |
+
+Interactive API documentation is available at `/docs` when the backend is
+running.
+
+## 8. Environment variables
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Server-side Gemini API key. Required for AI features. | Not set |
+| `GEMINI_MODEL` | Gemini model used by backend AI features. | `gemini-3.8-flash` |
+| `AI_DAILY_LIMIT` | Maximum Gemini requests allowed per UTC day by the backend process. | `100` |
+| `CORS_ORIGINS` | Comma-separated extra allowed browser origins. | Local Vite origins |
+
+An optional `.env.example` is provided as a template; copy it to `.env` only if
+your local setup loads environment files. Otherwise set the variables in the
+terminal or your deployment's environment settings.
+
+## 9. Local setup
+
+Prerequisites: Python 3.10 or newer, Node.js/npm, and a Gemini API key for
+AI-backed functionality.
+
+### Start FastAPI
+
+From the repository root in PowerShell:
 
 ```powershell
-$env:GEMINI_API_KEY = "<your Gemini API key>"
-$env:AI_DAILY_LIMIT = "100"
-```
-
-### Start the backend
-
-From a terminal at the repository root:
-
-```bash
 cd backend
 python -m pip install -r requirements.txt
+$env:GEMINI_API_KEY = "your-key"
 python -m uvicorn main:app --reload --port 8000
 ```
 
-FastAPI's interactive API documentation is available at
-`http://127.0.0.1:8000/docs`.
+FastAPI creates its SQLite database and tables on startup. Browse
+`http://127.0.0.1:8000/docs` to explore the API.
 
-### Start the frontend
+### Start React + Vite
 
-Open a second terminal at the repository root:
+In a second terminal, from the repository root:
 
-```bash
+```powershell
 cd frontend
 npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite, usually `http://localhost:5173`. Vite
-proxies API requests to the local FastAPI server on port `8000`.
+Open the local URL shown by Vite (usually `http://localhost:5173`). The Vite
+development proxy forwards API requests to FastAPI on port `8000`.
 
-### Build the frontend
+### Production frontend build
 
-```bash
+```powershell
 cd frontend
+npm ci
 npm run build
 ```
 
-## 9. API Endpoints
+The existing FastAPI root route serves `frontend/dist` when it exists.
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/` | Serves the frontend when a production build is available; otherwise returns an API status message. |
-| `GET` | `/health` | Returns the backend health status. |
-| `GET` | `/topics` | Returns the subject and available knowledge-base topics. |
-| `POST` | `/chat` | Matches a question to the local knowledge base. |
-| `POST` | `/learning-path` | Generates a personalized roadmap. |
-| `POST` | `/quiz` | Checks a topic answer and returns feedback. |
-| `POST` | `/ai-tutor` | Returns a Gemini-powered response using the supplied learner context. |
-| `POST` | `/ai-recommendation` | Returns a Gemini-assisted study recommendation while preserving prerequisite-based topic order. |
-| `POST` | `/ai-quiz-explanation` | Explains an incorrect answer for a known quiz topic. |
+## 10. Generate a roadmap
 
-## 10. Configuration and Usage Limit
+1. Enter your name, learning goal, skill level, and minutes available per day.
+2. Select **Generate Learning Path**.
+3. The browser sends the data to FastAPI. FastAPI saves the learner, selects
+   prerequisite-ordered knowledge-base topics, asks Gemini to personalize the
+   roadmap, validates the response, and saves the roadmap and topics in SQLite.
+4. The saved roadmap and generated practice prompts appear in the interface.
 
-| Environment variable | Purpose | Default |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | Server-side credential used by FastAPI to access Gemini. | Not set |
-| `AI_DAILY_LIMIT` | Maximum AI Tutor requests allowed per day by the running backend process. | `100` |
+## 11. Track progress and quizzes
 
-Set both variables in the Render service's environment settings for the
-deployed AI Tutor. The API key is a secret: enter it as a server environment
-variable and never commit it to GitHub or place it in a `VITE_` variable.
+Mark a roadmap topic complete or submit its practice answer. The frontend sends
+the completion or quiz outcome to FastAPI, which stores it in SQLite. The
+progress dashboard updates and the saved learner's latest roadmap and progress
+are restored on a later visit in the same browser.
 
-The daily request counter is held in memory and uses the UTC calendar day. It
-is shared between requests handled by the same running process, but resets
-when that process restarts. It is not a persistent cross-instance counter.
+## 12. Download the roadmap
+
+Select **Download Roadmap PDF** on the roadmap. FastAPI loads the learner,
+roadmap, topics, and completion state from SQLite, creates the PDF locally using
+ReportLab, and returns it as a file download. No external PDF service is used.
+
+## 13. Deployment
+
+The existing `render.yaml` remains the Render deployment configuration. It
+installs `backend/requirements.txt`, builds the Vite frontend, starts Uvicorn,
+and uses `/health` as the health check. Set `GEMINI_API_KEY` in the Render
+service's secret environment variables; do not commit it.
+
+SQLite is a local file. On hosting plans where the filesystem is ephemeral,
+database contents may not survive instance replacement or restart. For durable
+deployment, attach a persistent disk at `backend/data` where the platform and
+plan support it. This does not affect local development.

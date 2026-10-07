@@ -11,8 +11,12 @@ const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
 const STORAGE_KEY = "personalized_learning_completed_topics";
 
 const QUIZ_STORAGE_KEY = "personalized_learning_quiz_scores";
+const LEARNER_STORAGE_KEY = "personalized_learning_learner_id";
 
-
+function readStoredId(key: string): number | null {
+  const value = Number(localStorage.getItem(key));
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
 
 interface Topic {
 
@@ -27,7 +31,8 @@ interface Topic {
   estimated_minutes: number;
 
   practice_question: string;
-
+  database_topic_id?: number;
+  completed?: boolean;
 }
 
 
@@ -45,7 +50,10 @@ interface LearningPathResponse {
   estimated_days: number;
 
   roadmap: Topic[];
-
+  roadmap_id: number;
+  learner_id: number;
+  title?: string;
+  description?: string;
 }
 
 
@@ -161,6 +169,66 @@ function isAITextResponse(value: unknown): value is AITextResponse {
   );
 }
 
+function isLearningPathResponse(
+  value: Record<string, unknown>,
+): value is Record<string, unknown> & LearningPathResponse {
+  return (
+    typeof value.goal === "string" &&
+    typeof value.current_level === "string" &&
+    typeof value.minutes_per_day === "number" &&
+    typeof value.estimated_total_minutes === "number" &&
+    typeof value.estimated_days === "number" &&
+    typeof value.roadmap_id === "number" &&
+    typeof value.learner_id === "number" &&
+    Array.isArray(value.roadmap) &&
+    value.roadmap.every(
+      (topic) =>
+        typeof topic === "object" &&
+        topic !== null &&
+        "topic_id" in topic &&
+        typeof topic.topic_id === "string" &&
+        "topic" in topic &&
+        typeof topic.topic === "string" &&
+        "explanation" in topic &&
+        typeof topic.explanation === "string" &&
+        "estimated_minutes" in topic &&
+        typeof topic.estimated_minutes === "number" &&
+        "practice_question" in topic &&
+        typeof topic.practice_question === "string",
+    )
+  );
+}
+
+function isLearnerProfile(
+  value: unknown,
+): value is {
+  name: string;
+  skill_level: string;
+  learning_goal: string;
+  study_time: number;
+} {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "skill_level" in value &&
+    typeof value.skill_level === "string" &&
+    "learning_goal" in value &&
+    typeof value.learning_goal === "string" &&
+    "study_time" in value &&
+    typeof value.study_time === "number"
+  );
+}
+
+function isQuizScores(value: unknown): value is { [topicId: string]: number } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Object.values(value).every((score) => typeof score === "number")
+  );
+}
+
 async function readApiResponse(
   response: Response,
 ): Promise<Record<string, unknown> | null> {
@@ -206,6 +274,13 @@ function extractTutorSection(response: string, heading: string): string {
 
 
 function App() {
+  const [learnerName, setLearnerName] = useState("Learner");
+  const [learnerId, setLearnerId] = useState<number | null>(() =>
+    readStoredId(LEARNER_STORAGE_KEY),
+  );
+  const [workflowError, setWorkflowError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
+  const [downloadingRoadmap, setDownloadingRoadmap] = useState(false);
 
   // --------------------------------
 
@@ -285,6 +360,85 @@ const [latestQuizAttempt, setLatestQuizAttempt] =
   const [completedTopics, setCompletedTopics] =
 
     useState<string[]>([]);
+
+useEffect(() => {
+  if (learnerId === null) {
+    localStorage.removeItem(LEARNER_STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(LEARNER_STORAGE_KEY, String(learnerId));
+}, [learnerId]);
+
+useEffect(() => {
+  if (learnerId === null) return;
+  let cancelled = false;
+
+  const restoreProgress = async () => {
+    try {
+      const progressResponse = await fetch(
+        `${API_URL}/api/progress/${learnerId}`,
+      );
+      const progressData = await readApiResponse(progressResponse);
+      if (!progressResponse.ok || !progressData) {
+        throw new Error(
+          typeof progressData?.detail === "string"
+            ? progressData.detail
+            : "Saved learning progress could not be loaded.",
+        );
+      }
+      if (cancelled) return;
+      const learner = progressData.learner;
+      if (!isLearnerProfile(learner)) {
+        throw new Error("Saved learner profile returned an invalid response.");
+      }
+      setLearnerName(learner.name);
+      setLevel(learner.skill_level);
+      setGoal(learner.learning_goal);
+      setMinutes(learner.study_time);
+      const savedRoadmapId = progressData.roadmap_id;
+      if (typeof savedRoadmapId === "number") {
+        const roadmapResponse = await fetch(
+          `${API_URL}/api/roadmap/${savedRoadmapId}`,
+        );
+        const roadmapData = await readApiResponse(roadmapResponse);
+        if (
+          !roadmapResponse.ok ||
+          !roadmapData ||
+          !isLearningPathResponse(roadmapData)
+        ) {
+          throw new Error(
+            typeof roadmapData?.detail === "string"
+              ? roadmapData.detail
+              : "Saved roadmap returned an invalid response.",
+          );
+        }
+        if (cancelled) return;
+        setLearningPath(roadmapData);
+        setCompletedTopics(
+          roadmapData.roadmap
+            .filter((topic) => topic.completed)
+            .map((topic) => topic.topic_id),
+        );
+      }
+      if (isQuizScores(progressData.quiz_scores)) {
+        setQuizScores(progressData.quiz_scores);
+      }
+    } catch (error) {
+      if (!cancelled) {
+        setWorkflowError(
+          error instanceof Error
+            ? error.message
+            : "Saved learning progress could not be loaded.",
+        );
+      }
+    }
+  };
+
+  void restoreProgress();
+  return () => {
+    cancelled = true;
+  };
+}, [learnerId]);
 
 
 
@@ -486,6 +640,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
 
     setLoadingPath(true);
+    setWorkflowError("");
 
 
 
@@ -514,6 +669,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
             minutes_per_day: minutes,
 
             completed_topics: completedTopics,
+            learner_name: learnerName.trim() || "Learner",
 
           }),
 
@@ -562,6 +718,9 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
 
       setLearningPath(data);
+      if (typeof data.learner_id === "number") {
+        setLearnerId(data.learner_id);
+      }
 
     } catch {
 
@@ -706,13 +865,14 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
     setAiTutorAnswer(null);
 
     try {
-      const response = await fetch(`${API_URL}/ai-tutor`, {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           question: learnerQuestion,
+          learner_id: learnerId,
           ...getLearnerContext(),
         }),
         signal: AbortSignal.timeout(65_000),
@@ -869,8 +1029,50 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
     }
   };
 
+    const downloadRoadmap = async () => {
+      const savedRoadmapId = learningPath?.roadmap_id;
+      if (!savedRoadmapId) {
+        setDownloadError("Generate and save a roadmap before downloading it.");
+        return;
+      }
 
-  // --------------------------------
+      setDownloadingRoadmap(true);
+      setDownloadError("");
+      try {
+        const response = await fetch(
+          `${API_URL}/api/download/roadmap/${savedRoadmapId}`,
+        );
+        if (!response.ok) {
+          const data = await readApiResponse(response);
+          throw new Error(
+            typeof data?.detail === "string"
+              ? data.detail
+              : "The roadmap PDF could not be downloaded.",
+          );
+        }
+
+        const file = await response.blob();
+        const objectUrl = URL.createObjectURL(file);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = `learning-roadmap-${savedRoadmapId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      } catch (error) {
+        setDownloadError(
+          error instanceof Error
+            ? error.message
+            : "The roadmap PDF could not be downloaded.",
+        );
+      } finally {
+        setDownloadingRoadmap(false);
+      }
+    };
+
+
+    // --------------------------------
 
   // Adaptive Recommendation
 
@@ -936,6 +1138,39 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
   // --------------------------------
 
+  const persistTopicCompletion = async (
+    topicId: string,
+    completed: boolean,
+  ): Promise<boolean> => {
+    const databaseTopicId = learningPath?.roadmap.find(
+      (topic) => topic.topic_id === topicId,
+    )?.database_topic_id;
+    if (learnerId === null || !databaseTopicId) return true;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/topics/${databaseTopicId}/complete`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ completed }),
+        },
+      );
+      const data = await readApiResponse(response);
+      if (!response.ok) {
+        alert(
+          typeof data?.detail === "string"
+            ? data.detail
+            : "Topic progress could not be saved.",
+        );
+        return false;
+      }
+      return true;
+    } catch {
+      alert("Cannot connect to the backend. Topic progress was not saved.");
+      return false;
+    }
+  };
 
 
   const submitQuiz = async (
@@ -986,7 +1221,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
       const response = await fetch(
 
 
-        `${API_URL}/quiz`,
+        `${API_URL}${learnerId === null ? "/quiz" : "/api/quiz/submit"}`,
 
 
         {
@@ -1006,12 +1241,10 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
           body: JSON.stringify({
 
-
             topic_id: topicId,
 
-
             user_answer: answer,
-
+            ...(learnerId === null ? {} : { learner_id: learnerId }),
 
           }),
 
@@ -1120,7 +1353,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
 
 
-      if (data.correct) {
+      if (data.correct && (await persistTopicCompletion(topicId, true))) {
 
 
         setCompletedTopics((previous) => {
@@ -1190,11 +1423,13 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
 
 
-  const toggleTopicCompletion = (
+  const toggleTopicCompletion = async (
 
     topicId: string
 
   ) => {
+    const completed = !completedTopics.includes(topicId);
+    if (!(await persistTopicCompletion(topicId, completed))) return;
 
     setCompletedTopics((previous) => {
 
@@ -1232,7 +1467,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
 
 
-  const resetProgress = () => {
+  const resetProgress = async () => {
 
     const confirmed =
 
@@ -1250,7 +1485,26 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
     }
 
-
+    if (learnerId !== null) {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/progress/${learnerId}/reset`,
+          { method: "POST" },
+        );
+        const data = await readApiResponse(response);
+        if (!response.ok) {
+          setWorkflowError(
+            typeof data?.detail === "string"
+              ? data.detail
+              : "Progress could not be reset in the database.",
+          );
+          return;
+        }
+      } catch {
+        setWorkflowError("Cannot connect to the backend. Progress was not reset.");
+        return;
+      }
+    }
 
     setCompletedTopics([]);
 
@@ -1287,6 +1541,7 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
 
     setLearningPath(null);
+    setLearnerId(null);
 
   };
 
@@ -1550,6 +1805,15 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
               void generatePath();
             }}
           >
+            <label htmlFor="learner-name">Your name</label>
+            <input
+              id="learner-name"
+              type="text"
+              maxLength={120}
+              placeholder="Enter your name"
+              value={learnerName}
+              onChange={(event) => setLearnerName(event.target.value)}
+            />
             <label htmlFor="learning-goal">Learning goal</label>
             <input
               id="learning-goal"
@@ -1636,6 +1900,12 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
       </section>
 
       <main className="container">
+
+        {workflowError && (
+          <p className="workflow-error" role="alert">
+            {workflowError}
+          </p>
+        )}
 
 
 
@@ -1801,7 +2071,24 @@ const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{
 
             </h2>
 
-
+              <div className="roadmap-download">
+                <p>
+                  Saved for {learnerName}. Download the roadmap with its current
+                  progress and practice questions.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void downloadRoadmap()}
+                  disabled={downloadingRoadmap}
+                >
+                  {downloadingRoadmap ? "Preparing PDF..." : "Download Roadmap PDF"}
+                </button>
+              </div>
+              {downloadError && (
+                <p className="workflow-error" role="alert">
+                  {downloadError}
+                </p>
+              )}
 
             {/* SUMMARY */}
 

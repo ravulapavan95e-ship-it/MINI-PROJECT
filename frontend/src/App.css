@@ -1730,3 +1730,40 @@ footer span {
     width: 100%;
   }
 }
+
+.roadmap-download {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 12px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(143, 166, 215, 0.18);
+  border-radius: 12px;
+  background: rgba(30, 45, 75, 0.48);
+}
+
+.roadmap-download p {
+  color: #b9c6dc;
+  font-size: 13px;
+}
+
+.roadmap-download button {
+  flex: 0 0 auto;
+}
+
+.workflow-error {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 10px;
+  background: rgba(127, 29, 29, 0.24);
+  color: #fecaca;
+}
+
+@media (max-width: 640px) {
+  .roadmap-download {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
